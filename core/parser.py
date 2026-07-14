@@ -119,6 +119,20 @@ class ClinicalDataParser:
                 elif has_notes and any(w in notes_lower for w in ["sugar", "glucose", "thirst", "polyuria", "diabetic"]):
                     relevant = True
                     reason = "Symptomatology suggests glycemic imbalance."
+            elif p_id == "blood_cancer":
+                if has_imaging:
+                    relevant = True
+                    reason = "Peripheral blood smear scan / biopsy imaging found."
+                elif has_notes and any(w in notes_lower for w in ["blast", "leukemia", "lymphocyte", "blood cell", "blood cancer"]):
+                    relevant = True
+                    reason = "Clinical history mentions abnormal leukocyte patterns."
+            elif p_id == "brain_tumor":
+                if has_imaging:
+                    relevant = True
+                    reason = "Brain MRI / CT scan imaging found."
+                elif has_notes and any(w in notes_lower for w in ["headache", "mri", "brain", "glioma", "tumor", "contrast"]):
+                    relevant = True
+                    reason = "Clinical notes indicate neurological mass indications."
             else:
                 # Custom AutoML pipelines are checked based on pipeline name keywords
                 p_name_lower = p_name.lower()
@@ -152,6 +166,10 @@ class ClinicalDataParser:
                     pred = ModelWeightLoader.predict_cancer(reports)
                 elif p_id == "diabetes":
                     pred = ModelWeightLoader.predict_diabetes(reports)
+                elif p_id == "blood_cancer":
+                    pred = ModelWeightLoader.predict_blood_cancer(reports)
+                elif p_id == "brain_tumor":
+                    pred = ModelWeightLoader.predict_brain_tumor(reports)
                 else:
                     pred = ModelWeightLoader.predict_custom(p_name, reports)
                 

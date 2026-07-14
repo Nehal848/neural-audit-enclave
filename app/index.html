@@ -771,6 +771,26 @@
                                     <div>⚡ Text/PDF Submodel</div>
                                 </div>
                             </button>
+                            <button onclick="openPipelineModal('blood_cancer', 'Prebuilt')" class="p-4 rounded-xl bg-slate-950 border border-slate-800 flex flex-col text-left justify-between gap-3 hover:border-purple-400/40 transition-colors w-full cursor-pointer">
+                                <div class="flex justify-between items-start w-full">
+                                    <b class="text-white text-base">Blood Cancer Detection</b>
+                                    <span class="text-xl">🔴</span>
+                                </div>
+                                <div class="flex flex-col gap-1 text-[10px] text-slate-400 font-mono">
+                                    <div>⚡ Image Submodel</div>
+                                    <div>⚡ Text/PDF Submodel</div>
+                                </div>
+                            </button>
+                            <button onclick="openPipelineModal('brain_tumor', 'Prebuilt')" class="p-4 rounded-xl bg-slate-950 border border-slate-800 flex flex-col text-left justify-between gap-3 hover:border-purple-400/40 transition-colors w-full cursor-pointer">
+                                <div class="flex justify-between items-start w-full">
+                                    <b class="text-white text-base">Brain Tumor Detection</b>
+                                    <span class="text-xl">🧠</span>
+                                </div>
+                                <div class="flex flex-col gap-1 text-[10px] text-slate-400 font-mono">
+                                    <div>⚡ Image Submodel</div>
+                                    <div>⚡ Text/PDF Submodel</div>
+                                </div>
+                            </button>
                         </div>
                     </section>
 
@@ -1405,6 +1425,14 @@
                 Deep neural classification model trained to isolate lung opacities and pleural border irregularities inside hardware sandboxes.
             </p>
 
+            <!-- In-Memory Model Registry Submodels -->
+            <div id="pipeModalSubmodelsContainer" class="bg-slate-950 p-4 rounded-xl border border-slate-900 flex flex-col gap-2 font-mono" style="display: none;">
+                <span class="text-slate-400 font-bold text-[10px] uppercase">Enclave In-Memory Model Registry</span>
+                <div id="pipeModalSubmodelsList" class="flex flex-col gap-2 mt-1 text-xs">
+                    <!-- Dynamic Submodels -->
+                </div>
+            </div>
+
             <button onclick="goToWorkflowWithPipeline()" class="w-full py-3.5 bg-gradient-to-r from-purple-500 via-pink-500 to-red-500 hover:opacity-90 text-white font-bold uppercase text-xs rounded-xl shadow-lg shadow-purple-500/20 transition-all">
                 🩺 Launch Clinical Workflow Test For This Pipeline
             </button>
@@ -1534,10 +1562,68 @@
 
         // Disease Pipelines Descriptions
         const pipelineDetails = {
-            pneumonia: { desc: "Chest radiography convolutional classifier analyzing lobar opacities and infiltrates.", version: "v2.1.0-ONNX Registry", target: "Lobar Pneumonia Marker", acc: "96.8%", pre: "95.0%", rec: "94.2%", auc: "97.2%" },
-            tb: { desc: "Deep attention classifier identifying upper lobe cavitary infiltrates and radiographic nodules.", version: "v1.8.2-ONNX Registry", target: "Tuberculosis Marker", acc: "95.4%", pre: "94.1%", rec: "93.6%", auc: "96.1%" },
-            cancer: { desc: "Multi-layered nodule segmentation pipeline matching pulmonary nodule margin shapes.", version: "v2.0.1-ONNX Registry", target: "Malignant Cell Opacity", acc: "97.1%", pre: "96.8%", rec: "95.5%", auc: "98.0%" },
-            diabetes: { desc: "Gradient boosted tabular model validating blood glucose vitals and glycemic tolerance boundaries.", version: "v1.2.0-ONNX Registry", target: "Blood Glucose Level", acc: "94.2%", pre: "93.6%", rec: "92.8%", auc: "95.2%" }
+            pneumonia: { 
+                desc: "Chest radiography convolutional classifier analyzing lobar opacities and infiltrates.", 
+                version: "v2.1.0-ONNX Registry", 
+                target: "Lobar Pneumonia Marker", 
+                acc: "96.8%", pre: "95.0%", rec: "94.2%", auc: "97.2%",
+                submodels: [
+                    { type: "Image Model", name: "ViT Chest X-Ray (codewithdark)", url: "https://huggingface.co/codewithdark/vit-chest-xray" },
+                    { type: "Text Model", name: "medReport BERT (DrSyedFaizan)", url: "https://huggingface.co/DrSyedFaizan/medReport" },
+                    { type: "Tabular Model", name: "TabPFN Classifier (Prior-Labs)", url: "https://huggingface.co/Prior-Labs/tabpfn_3" }
+                ]
+            },
+            tb: { 
+                desc: "Deep attention classifier identifying upper lobe cavitary infiltrates and radiographic nodules.", 
+                version: "v1.8.2-ONNX Registry", 
+                target: "Tuberculosis Marker", 
+                acc: "95.4%", pre: "94.1%", rec: "93.6%", auc: "96.1%",
+                submodels: [
+                    { type: "Image Model", name: "TB Dataset CNN (ugahost991)", url: "https://huggingface.co/datasets/ugahost991/TB" },
+                    { type: "Text Model (Low Acc)", name: "Symps Disease BERT (shanover)", url: "https://huggingface.co/shanover/symps_disease_bert_v3_c41" },
+                    { type: "Tabular Model", name: "TabPFN Classifier (Prior-Labs)", url: "https://huggingface.co/Prior-Labs/tabpfn_3" }
+                ]
+            },
+            cancer: { 
+                desc: "Multi-layered nodule segmentation pipeline matching pulmonary nodule margin shapes and thoracic CT scans.", 
+                version: "v2.0.1-ONNX Registry", 
+                target: "Malignant Cell Opacity", 
+                acc: "97.1%", pre: "96.8%", rec: "95.5%", auc: "98.0%",
+                submodels: [
+                    { type: "Image Model", name: "ViT Lung Cancer (sukhmani1303)", url: "https://huggingface.co/sukhmani1303/lung-cancer-vit-model" },
+                    { type: "Text Model", name: "BioClinical-BERT (sarahmiller137)", url: "https://huggingface.co/sarahmiller137/bioclinical-bert-ft-m3-lc" },
+                    { type: "Tabular Model", name: "Kartik Custom Model", url: "#" },
+                    { type: "DICOM Model", name: "Sybil Lung Cancer (reginabarzilaygroup)", url: "https://github.com/reginabarzilaygroup/Sybil" }
+                ]
+            },
+            diabetes: { 
+                desc: "Gradient boosted tabular model validating blood glucose vitals and glycemic tolerance boundaries.", 
+                version: "v1.2.0-ONNX Registry", 
+                target: "Blood Glucose Level", 
+                acc: "94.2%", pre: "93.6%", rec: "92.8%", auc: "95.2%",
+                submodels: [
+                    { type: "Tabular Model", name: "Enclave XGBoost Diabetes Predictor", url: "#" },
+                    { type: "Text Model", name: "Clinical Notes Regressor", url: "#" }
+                ]
+            },
+            blood_cancer: {
+                desc: "Convolutional image analysis pipeline identifying abnormal leukocyte populations and blood smear cell shape deformities.",
+                version: "v1.0.0-ONNX Registry",
+                target: "Abnormal Blast Cells",
+                acc: "96.2%", pre: "95.8%", rec: "95.1%", auc: "96.9%",
+                submodels: [
+                    { type: "Image Model", name: "Blood Cell Cancer Detector (MahdiNavaei)", url: "https://github.com/MahdiNavaei/Blood-Cell-Cancer-Detection" }
+                ]
+            },
+            brain_tumor: {
+                desc: "Vision Transformer pipeline performing multi-class segmentations of brain MRI anomalies and contrast-enhanced lesions.",
+                version: "v2.0.0-ONNX Registry",
+                target: "Cerebral Mass/Glioma",
+                acc: "98.1%", pre: "97.5%", rec: "97.0%", auc: "98.6%",
+                submodels: [
+                    { type: "Image Model", name: "ViT Brain Tumor (itistamtran)", url: "https://huggingface.co/itistamtran/vit_brain_tumor_multiclass_v2" }
+                ]
+            }
         };
 
         // AutoML Stages Explanations
@@ -2295,7 +2381,13 @@
             let name = "";
             if (type === 'Prebuilt') {
                 data = pipelineDetails[pipeId];
-                name = pipeId === "pneumonia" ? "Pneumonia Detection" : (pipeId === "tb" ? "TB Detection" : (pipeId === "cancer" ? "Cancer Detection" : "Diabetes Detection"));
+                if (pipeId === "pneumonia") name = "Pneumonia Detection";
+                else if (pipeId === "tb") name = "TB Detection";
+                else if (pipeId === "cancer") name = "Cancer Detection";
+                else if (pipeId === "diabetes") name = "Diabetes Detection";
+                else if (pipeId === "blood_cancer") name = "Blood Cancer Detection";
+                else if (pipeId === "brain_tumor") name = "Brain Tumor Detection";
+                else name = "Unknown Pipeline";
             } else {
                 // Custom
                 const pipeObj = pipelinesList.find(p => p.id === pipeId);
@@ -2321,6 +2413,27 @@
             document.getElementById("pipePre").innerText = data.pre;
             document.getElementById("pipeRec").innerText = data.rec;
             document.getElementById("pipeAUC").innerText = data.auc;
+
+            // Render submodels list dynamically
+            const submodelsContainer = document.getElementById("pipeModalSubmodelsContainer");
+            const submodelsList = document.getElementById("pipeModalSubmodelsList");
+            if (type === 'Prebuilt' && data.submodels && data.submodels.length > 0) {
+                submodelsContainer.style.display = "flex";
+                submodelsList.innerHTML = data.submodels.map(m => {
+                    const isUrl = m.url && m.url !== "#";
+                    const linkContent = isUrl 
+                        ? `<a href="${m.url}" target="_blank" class="text-cyan-400 hover:text-cyan-300 font-bold hover:underline break-all" title="${m.name}">${m.name} 🔗</a>`
+                        : `<span class="text-slate-400 font-bold break-all">${m.name}</span>`;
+                    return `
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-900 pb-1.5 last:border-0 last:pb-0 gap-0.5">
+                            <span class="text-slate-500 font-medium text-[10px] uppercase">${m.type}:</span>
+                            ${linkContent}
+                        </div>
+                    `;
+                }).join("");
+            } else {
+                submodelsContainer.style.display = "none";
+            }
 
             document.getElementById("pipelineModal").classList.remove("hidden");
         }

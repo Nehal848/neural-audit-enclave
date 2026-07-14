@@ -64,6 +64,22 @@ PREBUILT_PIPELINES = [
         "modalities": ["Tabular/CSV Submodel", "Text / PDF Submodel"],
         "target": "Blood Glucose Level",
         "threshold": 0.60
+    },
+    {
+        "id": "blood_cancer",
+        "name": "Blood Cancer Detection",
+        "type": "Prebuilt",
+        "modalities": ["Image Submodel", "Text / PDF Submodel"],
+        "target": "Abnormal Blast Cells",
+        "threshold": 0.70
+    },
+    {
+        "id": "brain_tumor",
+        "name": "Brain Tumor Detection",
+        "type": "Prebuilt",
+        "modalities": ["Image Submodel", "Text / PDF Submodel"],
+        "target": "Cerebral Mass/Glioma",
+        "threshold": 0.65
     }
 ]
 
@@ -162,6 +178,44 @@ MOCK_PATIENTS = [
             "imaging": "",
             "lab": "Age,Blood_Sugar_Level,Prolonged_Cough\n110,88.0,No",
             "clinical_notes": "Patient is in high spirits. All metabolic indices check out clean. Baseline parameters within normal limits."
+        }
+    },
+    {
+        "id": "PT-1005",
+        "name": "Marvin the Android",
+        "age": 42000,
+        "symptoms": "Chronic headaches, severe localized skull pressure, diagnostic memory-core anomaly flags.",
+        "has_imaging": True,
+        "has_lab": False,
+        "has_notes": True,
+        "reports": {
+            "imaging_name": "brain_mri_marvin.png",
+            "lab_name": "N/A",
+            "notes_name": "clinical_notes_marvin.txt"
+        },
+        "reports_content": {
+            "imaging": "Simulated Brain MRI (Contrast enhancing lesion in right cerebral hemisphere)",
+            "lab": "",
+            "clinical_notes": "Patient presents with persistent severe headaches and localized skull pressure. Scanning shows contrast-enhancing mass indicating glioma or mass lesion."
+        }
+    },
+    {
+        "id": "PT-1006",
+        "name": "Fenchurch",
+        "age": 28,
+        "symptoms": "Unexplained bruising, severe fatigue, pallor, elevated leukocyte counts.",
+        "has_imaging": True,
+        "has_lab": True,
+        "has_notes": True,
+        "reports": {
+            "imaging_name": "blood_smear_fenchurch.png",
+            "lab_name": "blood_count_fenchurch.csv",
+            "notes_name": "clinical_notes_fenchurch.txt"
+        },
+        "reports_content": {
+            "imaging": "Simulated Peripheral Blood Smear (Abnormal leukocyte blast cells present)",
+            "lab": "Age,Leukocytes,Lymphocytes\n28,45000.0,Yes",
+            "clinical_notes": "Patient reports progressive fatigue, sudden bruising. Blood counts confirm marked leukocytosis. Smear shows high count of blast cells."
         }
     }
 ]
