@@ -2997,7 +2997,7 @@
             const skeletonEl = document.getElementById("reportHeatmapSkeleton");
             const placeholderEl = document.getElementById("reportHeatmapPlaceholder");
             
-            if (log.modality.toLowerCase().includes("image") || log.champion_model.toLowerCase().includes("vision") || log.champion_model.toLowerCase().includes("pneumonia") || log.champion_model.toLowerCase().includes("tb") || log.champion_model.toLowerCase().includes("cancer")) {
+            if (log.modality.toLowerCase().includes("image") || log.champion_model.toLowerCase().includes("vision") || log.champion_model.toLowerCase().includes("pneumonia") || log.champion_model.toLowerCase().includes("tb") || log.champion_model.toLowerCase().includes("cancer") || log.champion_model.toLowerCase().includes("tumor")) {
                 placeholderEl.classList.add("hidden");
                 heatMapEl.classList.add("hidden");
                 skeletonEl.classList.remove("hidden");

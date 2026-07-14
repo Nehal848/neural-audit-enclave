@@ -311,7 +311,7 @@ async def run_automatic_workflow(p: RunWorkflowPayload, x_user_role: Optional[st
         
     pipelines = load_pipelines()
     if x_user_role == "standard":
-        pipelines = [p for p in pipelines if p["type"] == "Prebuilt"]
+        pipelines = [pipe for pipe in pipelines if pipe["type"] == "Prebuilt"]
     
     # Step 1-3: Run the AI Relevance Engine & Decision Logic
     workflow_results = ClinicalDataParser.evaluate_patient_workflow(reports, pipelines)
@@ -352,6 +352,12 @@ async def run_automatic_workflow(p: RunWorkflowPayload, x_user_role: Optional[st
             elif p_name == "Diabetes Detection" and score_val > 0.60:
                 findings.append("Elevated blood glucose levels indicate hyperglycemia.")
                 recommendations.append("Initiate HbA1c screening panel and glycemic management.")
+            elif p_name == "Blood Cancer Detection" and score_val > 0.70:
+                findings.append("Abnormal leukocyte blast cell proliferation detected in peripheral blood smear analysis.")
+                recommendations.append("Urgent oncology referral for bone marrow biopsy and cytogenetic profiling.")
+            elif p_name == "Brain Tumor Detection" and score_val > 0.65:
+                findings.append("Contrast-enhancing cerebral mass lesion identified on MRI scan. Glioma/mass classification suspected.")
+                recommendations.append("Neurosurgery and neuro-oncology consultation with urgent contrast-MRI follow-up.")
             else:
                 findings.append(f"Custom AutoML pipeline {p_name} flagged anomalous parameters.")
                 recommendations.append(f"Perform secondary diagnostic evaluation for {p_name}.")
@@ -440,7 +446,7 @@ async def run_workflow_on_uploaded_file(file: UploadFile = File(...), x_user_rol
         
     pipelines = load_pipelines()
     if x_user_role == "standard":
-        pipelines = [p for p in pipelines if p["type"] == "Prebuilt"]
+        pipelines = [pipe for pipe in pipelines if pipe["type"] == "Prebuilt"]
     workflow_results = ClinicalDataParser.evaluate_patient_workflow(reports, pipelines)
     
     execution_time_ms = (time.time() - start_time) * 1000
@@ -466,6 +472,12 @@ async def run_workflow_on_uploaded_file(file: UploadFile = File(...), x_user_rol
             elif p_name == "Diabetes Detection" and score_val > 0.60:
                 findings.append("Elevated blood glucose levels indicate hyperglycemia.")
                 recommendations.append("Initiate HbA1c screening panel and glycemic management.")
+            elif p_name == "Blood Cancer Detection" and score_val > 0.70:
+                findings.append("Abnormal leukocyte blast cell proliferation detected in peripheral blood smear analysis.")
+                recommendations.append("Urgent oncology referral for bone marrow biopsy and cytogenetic profiling.")
+            elif p_name == "Brain Tumor Detection" and score_val > 0.65:
+                findings.append("Contrast-enhancing cerebral mass lesion identified on MRI scan. Glioma/mass classification suspected.")
+                recommendations.append("Neurosurgery and neuro-oncology consultation with urgent contrast-MRI follow-up.")
             else:
                 findings.append(f"Custom AutoML pipeline {p_name} flagged anomalous parameters.")
                 recommendations.append(f"Perform secondary diagnostic evaluation for {p_name}.")
