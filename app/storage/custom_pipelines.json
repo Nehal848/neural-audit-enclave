@@ -1,0 +1,46 @@
+[
+    {
+        "id": "cardio_arrest_predictor",
+        "name": "Cardio Arrest Predictor",
+        "type": "Custom AutoML",
+        "modalities": [
+            "Tabular/CSV Submodel",
+            "Text/PDF Submodel"
+        ],
+        "target": "CardiacScore",
+        "threshold": 0.65
+    },
+    {
+        "id": "cardio_arrest_predictor",
+        "name": "Cardio Arrest Predictor",
+        "type": "Custom AutoML",
+        "modalities": [
+            "Tabular/CSV Submodel",
+            "Text/PDF Submodel"
+        ],
+        "target": "CardiacScore",
+        "threshold": 0.65
+    },
+    {
+        "id": "cardio_arrest_predictor",
+        "name": "Cardio Arrest Predictor",
+        "type": "Custom AutoML",
+        "modalities": [
+            "Tabular/CSV Submodel",
+            "Text/PDF Submodel"
+        ],
+        "target": "CardiacScore",
+        "threshold": 0.65
+    },
+    {
+        "id": "stroke_risk_predictor",
+        "name": "Stroke Risk Predictor",
+        "type": "Custom AutoML",
+        "modalities": [
+            "Tabular/CSV Submodel",
+            "Text/PDF Submodel"
+        ],
+        "target": "StrokeScore",
+        "threshold": 0.65
+    }
+]
