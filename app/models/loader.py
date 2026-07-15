@@ -29,6 +29,7 @@ class ModelWeightLoader:
         return {
             "champion": "XGBoost Classifier (Antigravity Wrapper)",
             "confidence": f"{score * 100:.2f}%",
+            "score": round(score, 4),
             "pool": leaderboard,
             "questions": [
                 "Does the patient show signs of clubbing or peripheral cyanosis?",
@@ -59,6 +60,7 @@ class ModelWeightLoader:
         return {
             "champion": "Custom CNN (Antigravity Vision v1)",
             "confidence": f"{score * 100:.2f}%",
+            "score": round(score, 4),
             "pool": leaderboard,
             "questions": [
                 "Is there localized dense consolidation indicating a lobar pneumonia flag?",
