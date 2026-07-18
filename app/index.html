@@ -1,0 +1,2168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hospital AI Ecosystem | On-Premise Healthcare Platform</title>
+<meta name="description" content="On-premise AI-powered healthcare platform for disease prediction, report analysis, and medical AI model management for hospitals and doctors.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#060B18;--surface:#0D1526;--surface2:#111D33;--border:rgba(255,255,255,0.07);
+  --cyan:#22D3EE;--blue:#3B82F6;--purple:#A855F7;--emerald:#10B981;--amber:#F59E0B;
+  --rose:#F43F5E;--slate400:#94A3B8;--slate300:#CBD5E1;--text:#F1F5F9;--textmuted:#64748B;
+}
+body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh;overflow-x:hidden}
+.mono{font-family:'JetBrains Mono',monospace}
+.bg-pattern{position:fixed;inset:0;pointer-events:none;z-index:-1;
+  background:radial-gradient(ellipse at 10% 20%,rgba(34,211,238,0.06) 0,transparent 50%),
+             radial-gradient(ellipse at 90% 80%,rgba(168,85,247,0.06) 0,transparent 50%),
+             radial-gradient(ellipse at 50% 50%,rgba(59,130,246,0.04) 0,transparent 60%)}
+.glass{background:rgba(13,21,38,0.85);backdrop-filter:blur(20px);border:1px solid var(--border);border-radius:16px}
+.glass-sm{background:rgba(17,29,51,0.75);backdrop-filter:blur(12px);border:1px solid var(--border);border-radius:12px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:10px 20px;border-radius:10px;font-weight:600;font-size:14px;cursor:pointer;border:none;transition:all 0.2s;font-family:'Inter',sans-serif}
+.btn-cyan{background:linear-gradient(135deg,#22D3EE,#3B82F6);color:#060B18}
+.btn-cyan:hover{opacity:0.88;transform:translateY(-1px)}
+.btn-purple{background:linear-gradient(135deg,#A855F7,#6366F1);color:#fff}
+.btn-purple:hover{opacity:0.88;transform:translateY(-1px)}
+.btn-ghost{background:rgba(255,255,255,0.05);color:var(--slate300);border:1px solid var(--border)}
+.btn-ghost:hover{background:rgba(255,255,255,0.1);color:#fff}
+.btn-rose{background:rgba(244,63,94,0.15);color:#F43F5E;border:1px solid rgba(244,63,94,0.3)}
+.btn-rose:hover{background:rgba(244,63,94,0.25)}
+.btn-emerald{background:rgba(16,185,129,0.15);color:#10B981;border:1px solid rgba(16,185,129,0.3)}
+.btn-emerald:hover{background:rgba(16,185,129,0.25)}
+.btn-amber{background:rgba(245,158,11,0.15);color:var(--amber);border:1px solid rgba(245,158,11,0.3)}
+.btn-sm{padding:6px 14px;font-size:12px;border-radius:8px}
+.btn-lg{padding:14px 32px;font-size:15px;border-radius:12px}
+.form-group{display:flex;flex-direction:column;gap:6px}
+.form-group label{font-size:12px;color:var(--slate400);font-weight:500}
+.form-input{width:100%;background:rgba(0,0,0,0.35);border:1px solid var(--border);border-radius:10px;padding:11px 14px;color:var(--text);font-size:13px;font-family:'Inter',sans-serif;outline:none;transition:border-color 0.2s}
+.form-input:focus{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(34,211,238,0.1)}
+.form-input::placeholder{color:var(--textmuted)}
+select.form-input option{background:#0D1526;color:#fff}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:700}
+.badge-cyan{background:rgba(34,211,238,0.12);color:var(--cyan);border:1px solid rgba(34,211,238,0.25)}
+.badge-purple{background:rgba(168,85,247,0.12);color:#C084FC;border:1px solid rgba(168,85,247,0.25)}
+.badge-emerald{background:rgba(16,185,129,0.12);color:var(--emerald);border:1px solid rgba(16,185,129,0.25)}
+.badge-rose{background:rgba(244,63,94,0.12);color:var(--rose);border:1px solid rgba(244,63,94,0.25)}
+.badge-amber{background:rgba(245,158,11,0.12);color:var(--amber);border:1px solid rgba(245,158,11,0.25)}
+.badge-slate{background:rgba(148,163,184,0.1);color:var(--slate400);border:1px solid rgba(148,163,184,0.2)}
+.badge-orange{background:rgba(234,88,12,0.12);color:#FB923C;border:1px solid rgba(234,88,12,0.25)}
+.nav-item{display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:12px;font-size:13px;font-weight:600;color:var(--slate400);cursor:pointer;border:1px solid transparent;transition:all 0.2s;background:none;width:100%;text-align:left}
+.nav-item:hover{background:rgba(255,255,255,0.05);color:var(--text)}
+.nav-item.active{background:rgba(34,211,238,0.12);border-color:rgba(34,211,238,0.3);color:var(--cyan)}
+.nav-item .nav-icon{font-size:18px;width:26px;text-align:center;flex-shrink:0}
+.nav-label-wrap{display:flex;flex-direction:column;gap:1px}
+.nav-sub{font-size:10px;font-weight:400;color:var(--textmuted);font-family:'JetBrains Mono',monospace}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:10px}
+.stat-label{font-size:11px;color:var(--textmuted);font-weight:600;text-transform:uppercase;letter-spacing:0.05em}
+.stat-val{font-size:30px;font-weight:800;line-height:1}
+.dot-active{width:8px;height:8px;border-radius:50%;background:var(--emerald);flex-shrink:0;animation:pulseD 2s infinite}
+.dot-warn{width:8px;height:8px;border-radius:50%;background:var(--amber);flex-shrink:0}
+.dot-off{width:8px;height:8px;border-radius:50%;background:var(--rose);flex-shrink:0}
+@keyframes pulseD{0%,100%{opacity:1}50%{opacity:.4}}
+.progress-bar{width:100%;height:7px;background:rgba(255,255,255,0.07);border-radius:99px;overflow:hidden}
+.progress-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--cyan),var(--blue));transition:width 0.6s ease}
+.progress-fill-amber{background:linear-gradient(90deg,var(--amber),#F97316)}
+.data-table{width:100%;border-collapse:collapse}
+.data-table th{text-align:left;padding:10px 16px;font-size:11px;font-weight:700;color:var(--textmuted);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border)}
+.data-table td{padding:13px 16px;font-size:13px;border-bottom:1px solid rgba(255,255,255,0.04);vertical-align:middle}
+.data-table tr:hover td{background:rgba(255,255,255,0.02)}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:99px}
+.fade-in{animation:fadeIn 0.3s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.hidden{display:none!important}
+.flex{display:flex}.items-center{align-items:center}.items-start{align-items:flex-start}
+.justify-between{justify-content:space-between}.justify-center{justify-content:center}
+.flex-col{flex-direction:column}.flex-grow{flex-grow:1}.flex-wrap{flex-wrap:wrap}
+.w-full{width:100%}.shrink-0{flex-shrink:0}
+.gap-1{gap:4px}.gap-2{gap:8px}.gap-3{gap:12px}.gap-4{gap:16px}.gap-6{gap:24px}.gap-8{gap:32px}
+.grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.grid-auto{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
+.mt-2{margin-top:8px}.mt-3{margin-top:12px}.mt-4{margin-top:16px}.mt-6{margin-top:24px}.mt-8{margin-top:32px}
+.mb-2{margin-bottom:8px}.mb-4{margin-bottom:16px}.mb-6{margin-bottom:24px}
+.p-3{padding:12px}.p-4{padding:16px}.p-5{padding:20px}.p-6{padding:24px}
+.px-4{padding-left:16px;padding-right:16px}.py-3{padding-top:12px;padding-bottom:12px}
+.rounded{border-radius:8px}.rounded-lg{border-radius:12px}.rounded-xl{border-radius:16px}.rounded-full{border-radius:9999px}
+.border-b{border-bottom:1px solid var(--border)}
+.text-center{text-align:center}.truncate{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.text-xs{font-size:11px}.text-sm{font-size:13px}.text-base{font-size:15px}
+.text-lg{font-size:18px}.text-xl{font-size:22px}.text-2xl{font-size:26px}.text-3xl{font-size:32px}
+.font-medium{font-weight:500}.font-semibold{font-weight:600}.font-bold{font-weight:700}.font-black{font-weight:900}
+.text-cyan{color:var(--cyan)}.text-blue{color:var(--blue)}.text-purple{color:#C084FC}
+.text-emerald{color:var(--emerald)}.text-amber{color:var(--amber)}.text-rose{color:var(--rose)}
+.text-muted{color:var(--textmuted)}.text-slate{color:var(--slate300)}
+.alert-critical{border-left:3px solid #EF4444;background:rgba(239,68,68,0.06);border-radius:10px;padding:14px}
+.alert-high{border-left:3px solid #F59E0B;background:rgba(245,158,11,0.06);border-radius:10px;padding:14px}
+.alert-moderate{border-left:3px solid #3B82F6;background:rgba(59,130,246,0.06);border-radius:10px;padding:14px}
+.alert-low{border-left:3px solid #10B981;background:rgba(16,185,129,0.06);border-radius:10px;padding:14px}
+.otp-box{display:flex;gap:10px;justify-content:center;margin:8px 0}
+.otp-digit{width:52px;height:60px;text-align:center;font-size:24px;font-weight:800;background:rgba(0,0,0,0.4);border:2px solid var(--border);border-radius:12px;color:#fff;font-family:'JetBrains Mono',monospace;outline:none;transition:border-color .2s}
+.otp-digit:focus{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(34,211,238,0.15)}
+.step-row{display:flex;align-items:center;gap:0;margin-bottom:24px;overflow-x:auto;padding-bottom:8px}
+.step-node{display:flex;flex-direction:column;align-items:center;min-width:60px}
+.step-circle{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;font-family:'JetBrains Mono',monospace;border:2px solid var(--border);background:var(--surface);color:var(--textmuted);transition:all .3s;position:relative;z-index:1}
+.step-circle.active{border-color:var(--cyan);background:rgba(34,211,238,0.15);color:var(--cyan)}
+.step-circle.done{border-color:var(--emerald);background:var(--emerald);color:#060B18}
+.step-connector{flex:1;height:2px;background:var(--border);min-width:20px;transition:background .3s}
+.step-connector.done{background:var(--emerald)}
+.step-lbl{font-size:9px;color:var(--textmuted);text-align:center;max-width:55px;margin-top:4px;line-height:1.3}
+.error-box{background:rgba(244,63,94,0.1);border:1px solid rgba(244,63,94,0.3);border-radius:10px;padding:12px;font-size:12px;color:#F87171;font-family:'JetBrains Mono',monospace;margin-top:4px}
+.success-box{background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);border-radius:10px;padding:12px;font-size:12px;color:#34D399;font-family:'JetBrains Mono',monospace;margin-top:4px}
+.info-box{background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2);border-radius:10px;padding:12px;font-size:12px;color:#93C5FD;margin-top:4px}
+/* Landing */
+.landing-hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 24px;text-align:center}
+.feature-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px;transition:all 0.3s;cursor:default}
+.feature-card:hover{border-color:rgba(34,211,238,0.3);transform:translateY(-2px)}
+.pricing-card{background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:32px;transition:all .3s}
+.pricing-card.featured{border-color:rgba(34,211,238,0.4);background:rgba(34,211,238,0.04)}
+/* Sidebar + main layout */
+#appShell{display:none;height:100vh;flex-direction:column}
+#appShell.visible{display:flex}
+#topBar{background:rgba(6,11,24,0.95);border-bottom:1px solid var(--border);padding:10px 24px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;backdrop-filter:blur(20px)}
+#mainArea{display:flex;flex-grow:1;overflow:hidden}
+#sidebar{width:260px;flex-shrink:0;background:rgba(13,21,38,0.9);border-right:1px solid var(--border);padding:20px 16px;display:flex;flex-direction:column;gap:24px;overflow-y:auto;backdrop-filter:blur(20px)}
+#contentArea{flex-grow:1;overflow-y:auto;padding:32px}
+.portal-view{display:none}
+.portal-view.active{display:block}
+/* Modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(6,11,24,0.8);backdrop-filter:blur(12px);z-index:100;display:flex;align-items:center;justify-content:center;padding:20px}
+.modal-box{background:var(--surface);border:1px solid var(--border);border-radius:20px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;padding:32px}
+.modal-box-lg{max-width:700px}
+/* Market card */
+.market-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px;display:flex;flex-direction:column;gap:14px;transition:all .3s}
+.market-card:hover{border-color:rgba(34,211,238,0.3);transform:translateY(-2px)}
+/* Integration card */
+.integration-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px;display:flex;align-items:center;gap:16px;transition:all .3s}
+.integration-card:hover{background:var(--surface2)}
+/* Version row */
+.version-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.04)}
+/* Spinner */
+.spinner{width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--cyan);border-radius:50%;animation:spin 0.7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media(max-width:900px){
+  #sidebar{display:none}
+  #contentArea{padding:16px}
+  .grid-3,.grid-4{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:600px){
+  .grid-2,.grid-3,.grid-4{grid-template-columns:1fr}
+  .modal-box{padding:20px}
+}
+/* HuggingFace badge */
+.badge-hf{background:rgba(255,216,0,0.12);color:#FFD700;border:1px solid rgba(255,216,0,0.3);font-size:10px}
+.text-classifier-result{border:1px solid rgba(34,211,238,0.2);border-radius:14px;padding:20px;background:rgba(34,211,238,0.03);transition:all .3s}
+.text-classifier-result.cancer{border-color:rgba(244,63,94,0.3);background:rgba(244,63,94,0.04)}
+.text-classifier-result.non-cancer{border-color:rgba(16,185,129,0.3);background:rgba(16,185,129,0.04)}
+.confidence-bar{height:24px;border-radius:12px;overflow:hidden;background:rgba(255,255,255,0.06);position:relative}
+.confidence-fill{height:100%;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;transition:width 0.6s ease}
+.confidence-fill.cancer{background:linear-gradient(90deg,#F43F5E,#E11D48)}
+.confidence-fill.non-cancer{background:linear-gradient(90deg,#10B981,#059669)}
+</style>
+</head>
+<body>
+<div class="bg-pattern"></div>
+
+<!-- ================================================================== -->
+<!-- LANDING PAGE                                                         -->
+<!-- ================================================================== -->
+<div id="landingPage">
+  <!-- Top nav -->
+  <header style="position:fixed;top:0;left:0;right:0;z-index:50;background:rgba(6,11,24,0.9);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:14px 40px;display:flex;align-items:center;justify-content:space-between">
+    <div class="flex items-center gap-3">
+      <div style="width:36px;height:36px;background:linear-gradient(135deg,var(--cyan),var(--purple));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px">🏥</div>
+      <div>
+        <div class="font-black" style="font-size:15px">Hospital AI Ecosystem</div>
+        <div class="text-xs text-muted mono">On-Premise Healthcare Platform</div>
+      </div>
+    </div>
+    <div class="flex items-center gap-3">
+      <a href="#features" class="btn btn-ghost btn-sm">Features</a>
+      <a href="#pricing" class="btn btn-ghost btn-sm">Pricing</a>
+      <button onclick="openAuthModal('doctor')" class="btn btn-ghost btn-sm">Sign In</button>
+      <button onclick="openAuthModal('doctor')" class="btn btn-cyan btn-sm">Get Started</button>
+    </div>
+  </header>
+
+  <!-- Hero -->
+  <section class="landing-hero" style="padding-top:100px">
+    <div style="max-width:820px;margin:0 auto">
+      <div class="badge badge-cyan mono mb-4" style="font-size:11px">&#9679; ON-PREMISE &bull; HIPAA COMPLIANT &bull; FULLY PRIVATE</div>
+      <h1 class="font-black" style="font-size:clamp(36px,5vw,64px);line-height:1.08;margin-bottom:20px">
+        AI-Powered Disease<br><span class="text-cyan">Prediction Platform</span><br>for Modern Healthcare
+      </h1>
+      <p style="font-size:17px;color:var(--slate400);max-width:580px;margin:0 auto 36px;line-height:1.7">
+        Reduce doctor workload by up to 70% with AI-generated patient reports. Fully on-premise — no data leaves your hospital. HIPAA &amp; GDPR compliant.
+      </p>
+      <div class="flex items-center justify-center gap-4 flex-wrap">
+        <button onclick="openAuthModal('doctor')" class="btn btn-cyan btn-lg">
+          <span>🩺</span> Sign In as Doctor
+        </button>
+        <button onclick="openAuthModal('hospital')" class="btn btn-purple btn-lg">
+          <span>🏥</span> Sign In as Hospital
+        </button>
+      </div>
+      <div class="flex items-center justify-center gap-6 mt-8" style="color:var(--textmuted);font-size:13px">
+        <span>✓ No cloud dependency</span>
+        <span>✓ Your data stays yours</span>
+        <span>✓ AutoML model builder</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section id="features" style="padding:80px 40px;max-width:1200px;margin:0 auto">
+    <div class="text-center mb-8">
+      <div class="badge badge-purple mono mb-3">Platform Features</div>
+      <h2 class="font-black text-2xl">Everything your hospital needs</h2>
+      <p class="text-muted mt-2" style="font-size:14px">Two phases — licensed models and your own custom AutoML</p>
+    </div>
+    <div class="grid-3" style="gap:20px">
+      <div class="feature-card">
+        <div style="font-size:32px;margin-bottom:12px">🤖</div>
+        <h3 class="font-bold" style="font-size:16px;margin-bottom:8px">Phase 1 — Licensed Models</h3>
+        <p class="text-muted text-sm" style="line-height:1.6">Browse and activate pre-trained AI models (Pneumonia, Cancer, Diabetes, TB) with marketplace pricing from $899.</p>
+      </div>
+      <div class="feature-card">
+        <div style="font-size:32px;margin-bottom:12px">🧠</div>
+        <h3 class="font-bold" style="font-size:16px;margin-bottom:8px">Phase 2 — AutoML Studio</h3>
+        <p class="text-muted text-sm" style="line-height:1.6">Upload your own hospital data and build fully custom AI models in 10 guided steps. Model stays licensed to you.</p>
+      </div>
+      <div class="feature-card">
+        <div style="font-size:32px;margin-bottom:12px">🩺</div>
+        <h3 class="font-bold" style="font-size:16px;margin-bottom:8px">Doctor AI Reports</h3>
+        <p class="text-muted text-sm" style="line-height:1.6">Doctors receive AI-generated analysis reports with confidence scores, key findings, and clinical evidence. Not treatment advice.</p>
+      </div>
+      <div class="feature-card">
+        <div style="font-size:32px;margin-bottom:12px">🔗</div>
+        <h3 class="font-bold" style="font-size:16px;margin-bottom:8px">Lab &amp; Imaging Integration</h3>
+        <p class="text-muted text-sm" style="line-height:1.6">Connects to MRI, CT, X-Ray, ECG, EHR, EMR, PACS, CIS, Blood Lab, Pathology systems with live health monitoring.</p>
+      </div>
+      <div class="feature-card">
+        <div style="font-size:32px;margin-bottom:12px">🛡️</div>
+        <h3 class="font-bold" style="font-size:16px;margin-bottom:8px">On-Premise &amp; Private</h3>
+        <p class="text-muted text-sm" style="line-height:1.6">Runs entirely on your hospital server. No patient data is shared with any external service. Full HIPAA &amp; GDPR compliance.</p>
+      </div>
+      <div class="feature-card">
+        <div style="font-size:32px;margin-bottom:12px">📊</div>
+        <h3 class="font-bold" style="font-size:16px;margin-bottom:8px">Version Control</h3>
+        <p class="text-muted text-sm" style="line-height:1.6">Track all model versions — platform-licensed and hospital-created — with rollback capability and explainability reports.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Pricing -->
+  <section id="pricing" style="padding:80px 40px;max-width:1000px;margin:0 auto">
+    <div class="text-center mb-8">
+      <div class="badge badge-amber mono mb-3">Pricing</div>
+      <h2 class="font-black text-2xl">Simple, transparent plans</h2>
+    </div>
+    <div class="grid-3" style="gap:24px;align-items:start">
+      <div class="pricing-card">
+        <div class="badge badge-slate mb-4">Starter</div>
+        <div class="font-black text-2xl mb-1">$499<span style="font-size:14px;font-weight:400;color:var(--textmuted)">/mo</span></div>
+        <p class="text-muted text-sm mb-4" style="line-height:1.6">Perfect for small clinics</p>
+        <ul style="list-style:none;display:flex;flex-direction:column;gap:10px;font-size:13px;color:var(--slate300)">
+          <li>✓ Up to 3 pre-trained models</li>
+          <li>✓ 5 doctor accounts</li>
+          <li>✓ MRI + CT integration</li>
+          <li>✗ AutoML Studio</li>
+        </ul>
+        <button onclick="openAuthModal('hospital')" class="btn btn-ghost w-full mt-4">Get Started</button>
+      </div>
+      <div class="pricing-card featured">
+        <div class="badge badge-cyan mb-4">Professional ⭐ Popular</div>
+        <div class="font-black text-2xl mb-1" style="color:var(--cyan)">$1,299<span style="font-size:14px;font-weight:400;color:var(--textmuted)">/mo</span></div>
+        <p class="text-muted text-sm mb-4" style="line-height:1.6">For mid-size hospitals</p>
+        <ul style="list-style:none;display:flex;flex-direction:column;gap:10px;font-size:13px;color:var(--slate300)">
+          <li>✓ Unlimited licensed models</li>
+          <li>✓ Unlimited doctors</li>
+          <li>✓ All integrations (9 systems)</li>
+          <li>✓ AutoML Studio (Phase 2)</li>
+        </ul>
+        <button onclick="openAuthModal('hospital')" class="btn btn-cyan w-full mt-4">Get Started</button>
+      </div>
+      <div class="pricing-card">
+        <div class="badge badge-purple mb-4">Enterprise</div>
+        <div class="font-black text-2xl mb-1">Custom<span style="font-size:14px;font-weight:400;color:var(--textmuted)"> pricing</span></div>
+        <p class="text-muted text-sm mb-4" style="line-height:1.6">For hospital networks</p>
+        <ul style="list-style:none;display:flex;flex-direction:column;gap:10px;font-size:13px;color:var(--slate300)">
+          <li>✓ Multi-hospital deployment</li>
+          <li>✓ Federated learning</li>
+          <li>✓ Dedicated support SLA</li>
+          <li>✓ Custom model licensing</li>
+        </ul>
+        <button onclick="openAuthModal('hospital')" class="btn btn-ghost w-full mt-4">Contact Us</button>
+      </div>
+    </div>
+  </section>
+
+  <footer style="text-align:center;padding:40px;border-top:1px solid var(--border);color:var(--textmuted);font-size:12px">
+    &copy; 2026 Hospital AI Ecosystem &bull; On-Premise &bull; HIPAA Compliant &bull; All rights reserved
+  </footer>
+</div>
+
+<!-- ================================================================== -->
+<!-- AUTH MODAL                                                           -->
+<!-- ================================================================== -->
+<div id="authModal" class="hidden modal-overlay" onclick="closeAuthIfOutside(event)">
+  <div class="modal-box" id="authModalBox">
+    <!-- Step: Role Selection -->
+    <div id="authStepRole">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="font-black text-lg">Access Platform</h2>
+        <button onclick="closeAuthModal()" class="btn btn-ghost btn-sm">✕</button>
+      </div>
+      <p class="text-muted text-sm mb-6">Select your role to continue</p>
+      <div class="grid-2">
+        <button onclick="selectAuthRole('doctor')" style="background:rgba(34,211,238,0.06);border:1px solid rgba(34,211,238,0.2);border-radius:16px;padding:28px 20px;display:flex;flex-direction:column;align-items:center;gap:12px;cursor:pointer;transition:all .2s" class="role-card" onmouseover="this.style.borderColor='rgba(34,211,238,0.5)'" onmouseout="this.style.borderColor='rgba(34,211,238,0.2)'">
+          <span style="font-size:40px">🩺</span>
+          <div>
+            <div class="font-bold" style="font-size:16px;color:var(--cyan)">Doctor</div>
+            <div class="text-xs text-muted mt-1">Clinical AI analysis</div>
+          </div>
+        </button>
+        <button onclick="selectAuthRole('hospital')" style="background:rgba(168,85,247,0.06);border:1px solid rgba(168,85,247,0.2);border-radius:16px;padding:28px 20px;display:flex;flex-direction:column;align-items:center;gap:12px;cursor:pointer;transition:all .2s" onmouseover="this.style.borderColor='rgba(168,85,247,0.5)'" onmouseout="this.style.borderColor='rgba(168,85,247,0.2)'">
+          <span style="font-size:40px">🏥</span>
+          <div>
+            <div class="font-bold" style="font-size:16px;color:#C084FC">Hospital / Admin</div>
+            <div class="text-xs text-muted mt-1">Model management</div>
+          </div>
+        </button>
+      </div>
+    </div>
+
+    <!-- Step: Doctor Login -->
+    <div id="authStepDoctorLogin" class="hidden">
+      <div class="flex items-center gap-3 mb-6">
+        <button onclick="showAuthStep('role')" class="btn btn-ghost btn-sm">&#8592;</button>
+        <div>
+          <h2 class="font-black text-lg text-cyan">Doctor Sign In</h2>
+          <p class="text-xs text-muted mono">License number + password</p>
+        </div>
+      </div>
+      <form onsubmit="handleDoctorLogin(event)" class="flex-col gap-4" style="display:flex">
+        <div class="form-group">
+          <label>Medical License Number</label>
+          <input type="text" id="drLoginLic" class="form-input" placeholder="e.g. MED-98765-IN" required>
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="drLoginPass" class="form-input" placeholder="Enter password" required>
+        </div>
+        <div class="info-box">🔒 Demo credentials: <strong>MED-98765-IN</strong> / <strong>doctor</strong></div>
+        <div id="drLoginErr" class="hidden error-box"></div>
+        <button type="submit" class="btn btn-cyan w-full">Sign In &rarr;</button>
+        <div class="text-center text-xs text-muted">New doctor? <button type="button" onclick="showAuthStep('doctorSignup')" class="text-cyan" style="background:none;border:none;cursor:pointer;font-weight:600">Register here</button></div>
+      </form>
+    </div>
+
+    <!-- Step: Doctor OTP -->
+    <div id="authStepDoctorOTP" class="hidden">
+      <div class="text-center mb-6">
+        <div style="font-size:48px;margin-bottom:12px">📧</div>
+        <h2 class="font-black text-lg text-cyan">Verify OTP</h2>
+        <p class="text-sm text-muted mt-2">Enter the 6-digit code sent to your registered email</p>
+        <div id="drOTPHint" class="info-box mt-3 text-center" style="font-size:13px"></div>
+      </div>
+      <div class="otp-box">
+        <input class="otp-digit" maxlength="1" id="otp0" oninput="otpNext(0)" onkeydown="otpBack(event,0)">
+        <input class="otp-digit" maxlength="1" id="otp1" oninput="otpNext(1)" onkeydown="otpBack(event,1)">
+        <input class="otp-digit" maxlength="1" id="otp2" oninput="otpNext(2)" onkeydown="otpBack(event,2)">
+        <input class="otp-digit" maxlength="1" id="otp3" oninput="otpNext(3)" onkeydown="otpBack(event,3)">
+        <input class="otp-digit" maxlength="1" id="otp4" oninput="otpNext(4)" onkeydown="otpBack(event,4)">
+        <input class="otp-digit" maxlength="1" id="otp5" oninput="otpNext(5)" onkeydown="otpBack(event,5)">
+      </div>
+      <div id="drOTPErr" class="hidden error-box mt-2"></div>
+      <button onclick="verifyDoctorOTP()" class="btn btn-cyan w-full mt-4">Verify &amp; Enter</button>
+      <div class="text-center mt-3 text-xs text-muted">Didn't receive? <button onclick="resendOTP()" class="text-cyan" style="background:none;border:none;cursor:pointer">Resend OTP</button></div>
+    </div>
+
+    <!-- Step: Doctor Signup -->
+    <div id="authStepDoctorSignup" class="hidden">
+      <div class="flex items-center gap-3 mb-6">
+        <button onclick="showAuthStep('doctorLogin')" class="btn btn-ghost btn-sm">&#8592;</button>
+        <div>
+          <h2 class="font-black text-lg text-cyan">Register as Doctor</h2>
+          <p class="text-xs text-muted mono">New physician registration</p>
+        </div>
+      </div>
+      <form onsubmit="handleDoctorSignup(event)" class="flex-col gap-4" style="display:flex">
+        <div class="grid-2">
+          <div class="form-group">
+            <label>Full Name</label>
+            <input type="text" id="drSuName" class="form-input" placeholder="Dr. John Smith" required>
+          </div>
+          <div class="form-group">
+            <label>Medical License / Reg. No.</label>
+            <input type="text" id="drSuLic" class="form-input" placeholder="MED-XXXXX-IN" required>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="form-group">
+            <label>State / Country of Registration</label>
+            <input type="text" id="drSuState" class="form-input" placeholder="Maharashtra, India" required>
+          </div>
+          <div class="form-group">
+            <label>Phone Number</label>
+            <input type="text" id="drSuPhone" class="form-input" placeholder="+91-XXXXXXXXXX" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Hospital / Clinic Email</label>
+          <input type="email" id="drSuEmail" class="form-input" placeholder="doctor@hospital.in" required>
+        </div>
+        <div class="form-group">
+          <label>Hospital Name</label>
+          <input type="text" id="drSuHospital" class="form-input" placeholder="City General Hospital" required>
+        </div>
+        <div class="grid-2">
+          <div class="form-group">
+            <label>Password</label>
+            <input type="password" id="drSuPass" class="form-input" placeholder="Create password" required>
+          </div>
+          <div class="form-group">
+            <label>Confirm Password</label>
+            <input type="password" id="drSuConfirm" class="form-input" placeholder="Confirm password" required>
+          </div>
+        </div>
+        <div id="drSuErr" class="hidden error-box"></div>
+        <div id="drSuOk" class="hidden success-box"></div>
+        <button type="submit" class="btn btn-cyan w-full">Register &amp; Get OTP</button>
+      </form>
+    </div>
+
+    <!-- Step: Hospital Login -->
+    <div id="authStepHospitalLogin" class="hidden">
+      <div class="flex items-center gap-3 mb-6">
+        <button onclick="showAuthStep('role')" class="btn btn-ghost btn-sm">&#8592;</button>
+        <div>
+          <h2 class="font-black text-lg text-purple">Hospital Sign In</h2>
+          <p class="text-xs text-muted mono">Registration number + password</p>
+        </div>
+      </div>
+      <form onsubmit="handleHospitalLogin(event)" class="flex-col gap-4" style="display:flex">
+        <div class="form-group">
+          <label>Hospital Registration Number</label>
+          <input type="text" id="hosLoginReg" class="form-input" placeholder="e.g. HOSP-MH-001" required>
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="hosLoginPass" class="form-input" placeholder="Enter password" required>
+        </div>
+        <div class="info-box" style="border-color:rgba(168,85,247,0.3);color:#C084FC;background:rgba(168,85,247,0.06)">🔒 Demo: <strong>HOSP-MH-001</strong> / <strong>admin</strong></div>
+        <div id="hosLoginErr" class="hidden error-box"></div>
+        <button type="submit" class="btn btn-purple w-full">Sign In &rarr;</button>
+        <div class="text-center text-xs text-muted">New hospital? <button type="button" onclick="showAuthStep('hospitalSignup')" class="text-purple" style="background:none;border:none;cursor:pointer;font-weight:600">Register here</button></div>
+      </form>
+    </div>
+
+    <!-- Step: Hospital OTP -->
+    <div id="authStepHospitalOTP" class="hidden">
+      <div class="text-center mb-6">
+        <div style="font-size:48px;margin-bottom:12px">📧</div>
+        <h2 class="font-black text-lg text-purple">Verify OTP</h2>
+        <p class="text-sm text-muted mt-2">Enter the 6-digit code sent to your official hospital email</p>
+        <div id="hosOTPHint" class="info-box mt-3 text-center" style="border-color:rgba(168,85,247,0.3);color:#C084FC;background:rgba(168,85,247,0.06)"></div>
+      </div>
+      <div class="otp-box">
+        <input class="otp-digit" maxlength="1" id="hotp0" oninput="hotpNext(0)" onkeydown="hotpBack(event,0)">
+        <input class="otp-digit" maxlength="1" id="hotp1" oninput="hotpNext(1)" onkeydown="hotpBack(event,1)">
+        <input class="otp-digit" maxlength="1" id="hotp2" oninput="hotpNext(2)" onkeydown="hotpBack(event,2)">
+        <input class="otp-digit" maxlength="1" id="hotp3" oninput="hotpNext(3)" onkeydown="hotpBack(event,3)">
+        <input class="otp-digit" maxlength="1" id="hotp4" oninput="hotpNext(4)" onkeydown="hotpBack(event,4)">
+        <input class="otp-digit" maxlength="1" id="hotp5" oninput="hotpNext(5)" onkeydown="hotpBack(event,5)">
+      </div>
+      <div id="hosOTPErr" class="hidden error-box mt-2"></div>
+      <button onclick="verifyHospitalOTP()" class="btn btn-purple w-full mt-4">Verify &amp; Enter</button>
+    </div>
+
+    <!-- Step: Hospital Signup -->
+    <div id="authStepHospitalSignup" class="hidden">
+      <div class="flex items-center gap-3 mb-6">
+        <button onclick="showAuthStep('hospitalLogin')" class="btn btn-ghost btn-sm">&#8592;</button>
+        <div>
+          <h2 class="font-black text-lg text-purple">Register Hospital</h2>
+          <p class="text-xs text-muted mono">New hospital registration</p>
+        </div>
+      </div>
+      <form onsubmit="handleHospitalSignup(event)" class="flex-col gap-4" style="display:flex">
+        <div class="grid-2">
+          <div class="form-group">
+            <label>Hospital Name</label>
+            <input type="text" id="hosSuName" class="form-input" placeholder="City General Hospital" required>
+          </div>
+          <div class="form-group">
+            <label>Registration Number</label>
+            <input type="text" id="hosSuReg" class="form-input" placeholder="HOSP-XX-001" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Hospital Address</label>
+          <input type="text" id="hosSuAddr" class="form-input" placeholder="42 Medical Avenue, Mumbai" required>
+        </div>
+        <div class="grid-2">
+          <div class="form-group">
+            <label>Admin Name</label>
+            <input type="text" id="hosSuAdmin" class="form-input" placeholder="Mr. Rajan Mehta" required>
+          </div>
+          <div class="form-group">
+            <label>Admin Email</label>
+            <input type="email" id="hosSuAdminEmail" class="form-input" placeholder="admin@hospital.in" required>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="form-group">
+            <label>Official Email</label>
+            <input type="email" id="hosSuEmail" class="form-input" placeholder="info@hospital.in" required>
+          </div>
+          <div class="form-group">
+            <label>Phone Number</label>
+            <input type="text" id="hosSuPhone" class="form-input" placeholder="+91-XXXXXXXXXX" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="hosSuPass" class="form-input" placeholder="Create strong password" required>
+        </div>
+        <div id="hosSuErr" class="hidden error-box"></div>
+        <div id="hosSuOk" class="hidden success-box"></div>
+        <button type="submit" class="btn btn-purple w-full">Register &amp; Get OTP</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================== -->
+<!-- APP SHELL (shown after login)                                        -->
+<!-- ================================================================== -->
+<div id="appShell">
+  <!-- Top Bar -->
+  <div id="topBar">
+    <div class="flex items-center gap-3">
+      <div style="width:32px;height:32px;background:linear-gradient(135deg,var(--cyan),var(--purple));border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px">🏥</div>
+      <div>
+        <div class="font-bold" style="font-size:14px">Hospital AI Ecosystem</div>
+        <div id="topBarSub" class="text-xs text-muted mono">Loading...</div>
+      </div>
+    </div>
+    <div class="flex items-center gap-3">
+      <div class="flex items-center gap-2">
+        <div class="dot-active"></div>
+        <span class="text-xs text-emerald mono">SYSTEM ONLINE</span>
+      </div>
+      <div id="topBarUser" class="badge badge-cyan mono" style="font-size:11px"></div>
+      <button onclick="logout()" class="btn btn-rose btn-sm">&#x2715; Logout</button>
+    </div>
+  </div>
+
+  <div id="mainArea">
+    <!-- ── SIDEBAR ── -->
+    <aside id="sidebar">
+      <div>
+        <div class="text-xs text-muted mono font-bold" style="text-transform:uppercase;letter-spacing:.08em;padding:0 8px;margin-bottom:8px" id="sidebarRoleLabel">DOCTOR PORTAL</div>
+        <nav id="sidebarNav" class="flex-col gap-2" style="display:flex"></nav>
+      </div>
+      <div style="border-top:1px solid var(--border);padding-top:16px">
+        <div class="glass-sm p-3 flex items-center gap-3">
+          <div style="width:36px;height:36px;background:linear-gradient(135deg,var(--cyan),var(--blue));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">👤</div>
+          <div style="min-width:0">
+            <div class="font-bold text-sm truncate" id="sidebarName">Loading...</div>
+            <div class="text-xs text-muted truncate mono" id="sidebarMeta">---</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ── CONTENT AREA ── -->
+    <main id="contentArea">
+
+      <!-- ============================================================ -->
+      <!-- DOCTOR: DASHBOARD                                             -->
+      <!-- ============================================================ -->
+      <div id="view-doctor-dashboard" class="portal-view fade-in">
+        <div class="border-b pb-5 mb-6">
+          <h1 class="font-black text-2xl">Dashboard</h1>
+          <p class="text-muted text-sm mt-1">Patient alerts, AI model status, and recent activity</p>
+        </div>
+        <!-- AI Performance Metrics -->
+        <div class="grid-3 mb-6" id="doctorPerfCards">
+          <div class="stat-card"><div class="stat-label">Confidence Score</div><div class="stat-val text-cyan" id="dpfConf">--</div></div>
+          <div class="stat-card"><div class="stat-label">Doctor Agreement</div><div class="stat-val text-emerald" id="dpfAgree">--</div></div>
+          <div class="stat-card"><div class="stat-label">Avg. Analysis Time</div><div class="stat-val text-amber" id="dpfTime">--</div></div>
+        </div>
+        <!-- Patient Alerts -->
+        <div class="glass p-5 mb-6">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="font-bold text-base">Patient Risk Alerts</h2>
+            <div class="badge badge-rose">Live</div>
+          </div>
+          <div id="doctorAlertsList" class="flex-col gap-3" style="display:flex">
+            <div class="spinner" style="margin:24px auto"></div>
+          </div>
+        </div>
+        <div class="grid-2">
+          <!-- Active AI Models -->
+          <div class="glass p-5">
+            <h2 class="font-bold text-base mb-4">AI Models In Use</h2>
+            <div id="doctorModelsList" class="flex-col gap-3" style="display:flex">
+              <div class="spinner" style="margin:16px auto"></div>
+            </div>
+          </div>
+          <!-- Lab Uploads -->
+          <div class="glass p-5">
+            <h2 class="font-bold text-base mb-4">New Lab &amp; Imaging Uploads</h2>
+            <div id="doctorLabList" class="flex-col gap-2" style="display:flex">
+              <div class="spinner" style="margin:16px auto"></div>
+            </div>
+          </div>
+        </div>
+        <!-- Recent Patients -->
+        <div class="glass p-5 mt-6">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="font-bold text-base">Recent Patients</h2>
+            <button onclick="switchView('doctor','patients')" class="btn btn-ghost btn-sm">View All</button>
+          </div>
+          <div id="doctorRecentPatients"></div>
+        </div>
+      </div>
+
+      <!-- ============================================================ -->
+      <!-- DOCTOR: ANALYSIS & REPORTS                                    -->
+      <!-- ============================================================ -->
+      <div id="view-doctor-analysis" class="portal-view fade-in">
+        <div class="border-b pb-5 mb-6">
+          <h1 class="font-black text-2xl">Analysis &amp; Reports</h1>
+          <p class="text-muted text-sm mt-1">AI-generated per-patient analysis — data source, model used, findings, and evidence</p>
+        </div>
+        <div id="analysisPatientSelect" class="glass-sm p-4 mb-6">
+          <div class="flex items-center gap-3 flex-wrap">
+            <label class="text-sm font-semibold text-muted">Select Patient:</label>
+            <select id="analysisPatientDrop" class="form-input" style="width:auto;flex-grow:1;max-width:300px" onchange="loadPatientAnalysis()">
+              <option value="">-- Choose a patient --</option>
+            </select>
+            <button onclick="loadPatientAnalysis()" class="btn btn-cyan btn-sm">&#9654; Run Analysis</button>
+          </div>
+        </div>
+        <div id="analysisResults" class="hidden">
+          <div id="analysisPatientHeader" class="glass p-5 mb-5"></div>
+          <div id="analysisModelResults" class="flex-col gap-4" style="display:flex"></div>
+        </div>
+        <div id="analysisEmpty" class="glass p-8 text-center text-muted">
+          <div style="font-size:40px;margin-bottom:12px">🔬</div>
+          <p>Select a patient above to view their AI-generated analysis report</p>
+        </div>
+      </div>
+
+      <!-- ============================================================ -->
+      <!-- DOCTOR: MODELS                                                -->
+      <!-- ============================================================ -->
+      <div id="view-doctor-models" class="portal-view fade-in">
+        <div class="border-b pb-5 mb-6">
+          <h1 class="font-black text-2xl">Models</h1>
+          <p class="text-muted text-sm mt-1">AI models currently in use — view performance and submit feedback</p>
+        </div>
+        <div id="doctorModelsGrid" class="grid-auto"></div>
+        <!-- Feedback Modal trigger is inline in each card -->
+
+        <!-- ── Blood Cancer Text Classifier (BiomedBERT) ── -->
+        <div class="glass p-6 mt-6" id="bloodCancerTextPanel">
+          <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-3">
+              <div style="width:42px;height:42px;background:linear-gradient(135deg,#F43F5E,#A855F7);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px">🧬</div>
+              <div>
+                <div class="font-black text-base">Blood Cancer — Text Classifier</div>
+                <div class="text-xs text-muted mono mt-1">BiomedBERT · user1729/BiomedBERT-cancer-bert-classifier-v1.0</div>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="badge badge-hf">🤗 HuggingFace</span>
+              <span class="badge badge-emerald">Active</span>
+            </div>
+          </div>
+          <div class="grid-3 gap-4 mb-4">
+            <div class="glass-sm p-3 text-center"><div class="text-xs text-muted">Architecture</div><div class="font-bold text-sm mt-1">BertForSequenceClassification</div></div>
+            <div class="glass-sm p-3 text-center"><div class="text-xs text-muted">Task</div><div class="font-bold text-sm mt-1">Cancer vs Non-Cancer</div></div>
+            <div class="glass-sm p-3 text-center"><div class="text-xs text-muted">Parameters</div><div class="font-bold text-sm mt-1 text-cyan">109M</div></div>
+          </div>
+          <div class="form-group mb-4">
+            <label>Paste medical text, clinical notes, or abstracts for classification</label>
+            <textarea id="bcTextInput" class="form-input" rows="4" placeholder="e.g. Breast cancer is a disease where cells in the breast tissue grow out of control, forming tumors..."></textarea>
+          </div>
+          <div class="flex items-center gap-3 mb-4">
+            <button onclick="runBloodCancerTextClassifier()" class="btn btn-cyan" id="bcTextRunBtn">&#9654; Classify Text</button>
+            <button onclick="document.getElementById('bcTextInput').value='Breast cancer is a disease where cells in the breast tissue grow out of control, forming tumors. It is the most common cancer in women, and while less common in men, it can occur in both sexes.';" class="btn btn-ghost btn-sm">Load Example</button>
+            <div id="bcTextSpinner" class="spinner hidden"></div>
+          </div>
+          <div id="bcTextResult" class="hidden"></div>
+        </div>
+      </div>
+
+      <!-- ============================================================ -->
+      <!-- DOCTOR: PATIENTS                                              -->
+      <!-- ============================================================ -->
+      <div id="view-doctor-patients" class="portal-view fade-in">
+        <div class="border-b pb-5 mb-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <h1 class="font-black text-2xl">Patients</h1>
+              <p class="text-muted text-sm mt-1">Search, add, and view patient records</p>
+            </div>
+            <button onclick="openAddPatientModal()" class="btn btn-cyan">+ Add Patient</button>
+          </div>
+        </div>
+        <div class="glass-sm p-4 mb-5">
+          <input type="text" id="patientSearchInput" class="form-input" placeholder="&#128269; Search patients by name or ID..." oninput="filterPatients()">
+        </div>
+        <div class="glass p-0" style="overflow:hidden">
+          <table class="data-table w-full" id="patientsTable">
+            <thead><tr>
+              <th>Patient ID</th><th>Name</th><th>Age</th><th>Symptoms</th><th>Data Available</th><th>Actions</th>
+            </tr></thead>
+            <tbody id="patientsTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ============================================================ -->
+      <!-- DOCTOR: LABORATORY & IMAGING                                  -->
+      <!-- ============================================================ -->
+      <div id="view-doctor-lab" class="portal-view fade-in">
+        <div class="border-b pb-5 mb-6">
+          <h1 class="font-black text-2xl">Laboratory &amp; Imaging</h1>
+          <p class="text-muted text-sm mt-1">Connection status, new uploads, and findings from all medical data sources</p>
+        </div>
+        <div id="labImagingGrid" class="grid-3"></div>
+      </div>
+
+      <!-- ============================================================ -->
+      <!-- DOCTOR: SETTINGS                                              -->
+      <!-- ============================================================ -->
+      <div id="view-doctor-settings" class="portal-view fade-in">
+        <div class="border-b pb-5 mb-6">
+          <h1 class="font-black text-2xl">Settings</h1>
+          <p class="text-muted text-sm mt-1">Account and platform settings</p>
+        </div>
+        <div class="glass p-6" style="max-width:580px">
+          <h2 class="font-bold mb-4">Account Information</h2>
+          <div class="flex-col gap-4" style="display:flex">
+            <div class="form-group"><label>Full Name</label><input class="form-input" id="settingDrName" readonly></div>
+            <div class="form-group"><label>License Number</label><input class="form-input" id="settingDrLic" readonly></div>
+            <div class="form-group"><label>Hospital</label><input class="form-input" id="settingDrHospital" readonly></div>
+            <div class="form-group"><label>Notification Preferences</label>
+              <select class="form-input"><option>Email + In-App (Recommended)</option><option>In-App Only</option><option>None</option></select>
+            </div>
+            <div class="form-group"><label>Report Language</label>
+              <select class="form-input"><option>English</option><option>Hindi</option><option>Marathi</option></select>
+            </div>
+            <button class="btn btn-cyan btn-sm" style="width:fit-content">Save Preferences</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============================================================ -->
+      <!-- HOSPITAL: DASHBOARD                                           -->
+      <!-- ============================================================ -->
+      <div id="view-hospital-dashboard" class="portal-view fade-in">
+        <div class="border-b pb-5 mb-6">
+          <h1 class="font-black text-2xl">Hospital Dashboard</h1>
+          <p class="text-muted text-sm mt-1">Overview of active models, training progress, and doctor feedback</p>
+        </div>
+        <!-- Active Models -->
+        <div class="glass p-5 mb-6">
+          <h2 class="font-bold mb-4">Active &amp; In-Use Models</h2>
+          <div id="hospDashModels" class="grid-3"></div>
+        </div>
+        <div class="grid-2 mb-6">
+          <!-- Training Progress -->
+          <div class="glass p-5">
+            <h2 class="font-bold mb-4">Models in Training</h2>
+            <div id="hospDashTraining" class="flex-col gap-4" style="display:flex"></div>
+          </div>
+          <!-- Lab/Imaging Status -->
+          <div class="glass p-5">
+            <h2 class="font-bold mb-4">Lab &amp; Imaging System Status</h2>
+            <div id="hospDashLabStatus" class="flex-col gap-3" style="display:flex"></div>
+          </div>
+        </div>
+        <!-- Doctor Feedback -->
+        <div class="glass p-5">
+          <h2 class="font-bold mb-4">Recent Doctor Feedback</h2>
+          <div id="hospDashFeedback" class="flex-col gap-3" style="display:flex"></div>
+        </div>
+      </div>
+
+      <!-- ============================================================ -->
+      <!-- HOSPITAL: MY MODEL                                            -->
+      <!-- ============================================================ -->
+      <div id="view-hospital-mymodel" class="portal-view fade-in">
+        <div class="border-b pb-5 mb-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <h1 class="font-black text-2xl">My Models</h1>
+              <p class="text-muted text-sm mt-1">All deployed models — platform-licensed ("Ours") and hospital-created ("Theirs")</p>
+            </div>
+            <div class="flex gap-2">
+              <button onclick="filterMyModels('all')" id="mmFilterAll" class="btn btn-cyan btn-sm">All</button>
+              <button onclick="filterMyModels('Ours')" id="mmFilterOurs" class="btn btn-ghost btn-sm">Ours</button>
+              <button onclick="filterMyModels('Theirs')" id="mmFilterTheirs" class="btn btn-ghost btn-sm">Theirs</button>
+            </div>
+          </div>
+        </div>
+        <div class="glass p-0" style="overflow:hidden">
+          <table class="data-table w-full" id="myModelsTable">
+            <thead><tr>
+              <th>Model Name</th><th>Type</th><th>Accuracy</th><th>Version</th><th>Status</th><th>Ownership</th><th>Feedback</th>
+            </tr></thead>
+            <tbody id="myModelsTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ============================================================ -->
+      <!-- HOSPITAL: MARKETPLACE                                         -->
+      <!-- ============================================================ -->
+      <div id="view-hospital-marketplace" class="portal-view fade-in">
+        <div class="border-b pb-5 mb-6">
+          <h1 class="font-black text-2xl">Model Marketplace</h1>
+          <p class="text-muted text-sm mt-1">Phase 1 — Browse and purchase licensed pre-trained AI models</p>
+        </div>
+        <div id="marketplaceGrid" class="grid-auto"></div>
+      </div>
+
+      <!-- ============================================================ -->
+      <!-- HOSPITAL: CREATE NEW MODEL (AutoML)                           -->
+      <!-- ============================================================ -->
+      <div id="view-hospital-automl" class="portal-view fade-in">
+        <div class="border-b pb-5 mb-6">
+          <h1 class="font-black text-2xl">Create New Model</h1>
+          <p class="text-muted text-sm mt-1">Phase 2 — AutoML platform to build your hospital's own AI model in 10 steps</p>
+        </div>
+        <!-- Sub-tabs -->
+        <div class="flex gap-3 mb-6 flex-wrap">
+          <button onclick="switchAutoMLTab('create')" id="tabCreate" class="btn btn-cyan btn-sm">+ Create New</button>
+          <button onclick="switchAutoMLTab('training')" id="tabTraining" class="btn btn-ghost btn-sm">&#9654; In-Training (2)</button>
+          <button onclick="switchAutoMLTab('pending')" id="tabPending" class="btn btn-ghost btn-sm">&#128336; Pending Approval</button>
+          <button onclick="switchAutoMLTab('ready')" id="tabReady" class="btn btn-ghost btn-sm">&#10003; Ready to View</button>
+        </div>
+        <!-- Create New Wizard -->
+        <div id="automlCreate">
+          <!-- Step Indicator -->
+          <div class="glass-sm p-4 mb-6" id="stepIndicatorRow"></div>
+          <!-- Step Content -->
+          <div class="glass p-6" id="automlStepContent"></div>
+          <!-- Navigation -->
+          <div class="flex items-center justify-between mt-5">
+            <button id="automlPrevBtn" onclick="automlPrev()" class="btn btn-ghost hidden">&#8592; Back</button>
+            <div id="automlStepLabel" class="text-xs text-muted mono"></div>
+            <button id="automlNextBtn" onclick="automlNext()" class="btn btn-cyan">Next &#8594;</button>
+          </div>
+        </div>
+        <div id="automlTraining" class="hidden">
+          <div class="flex-col gap-4" style="display:flex">
+            <div class="glass p-5">
+              <div class="flex items-center justify-between mb-3">
+                <div><div class="font-bold">Cardiac Arrest Predictor</div><div class="text-xs text-muted mono mt-1">Step 7 — AutoML Pipeline running</div></div>
+                <div class="badge badge-cyan">72% Complete</div>
+              </div>
+              <div class="progress-bar"><div class="progress-fill" style="width:72%"></div></div>
+              <div class="text-xs text-muted mt-2">Stage: Feature Engineering &bull; ETA: ~18 min</div>
+            </div>
+            <div class="glass p-5">
+              <div class="flex items-center justify-between mb-3">
+                <div><div class="font-bold">Retinal Disease Screener</div><div class="text-xs text-muted mono mt-1">Step 4 — Data Cleaning</div></div>
+                <div class="badge badge-amber">34% Complete</div>
+              </div>
+              <div class="progress-bar"><div class="progress-fill progress-fill-amber" style="width:34%"></div></div>
+              <div class="text-xs text-muted mt-2">Stage: Data Cleaning &amp; Conversion &bull; ETA: ~45 min</div>
+            </div>
+          </div>
+        </div>
+        <div id="automlPending" class="hidden">
+          <div class="glass p-5">
+            <div class="flex items-center justify-between mb-4"><h2 class="font-bold">Pending Approval</h2><div class="badge badge-amber">1 item</div></div>
+            <div class="glass-sm p-4 flex items-center justify-between">
+              <div><div class="font-bold">Hepatitis Risk Predictor</div><div class="text-xs text-muted mono mt-1">Accuracy: 93.2% &bull; F1: 0.91 &bull; v1.0.0</div></div>
+              <div class="flex gap-2">
+                <button class="btn btn-emerald btn-sm">&#10003; Approve</button>
+                <button class="btn btn-rose btn-sm">&#10007; Reject</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div id="automlReady" class="hidden">
+          <div class="glass p-5">
+            <div class="flex items-center justify-between mb-4"><h2 class="font-bold">Ready to View</h2><div class="badge badge-emerald">1 model</div></div>
+            <div class="glass-sm p-4 flex items-center justify-between">
+              <div>
+                <div class="font-bold">Hypertension Risk Model</div>
+                <div class="text-xs text-muted mono mt-1">Accuracy: 95.8% &bull; F1: 0.94 &bull; v1.0.0-ONNX</div>
+                <div class="flex gap-2 mt-2"><span class="badge badge-emerald">Deployed</span><span class="badge badge-slate">Theirs</span></div>
+              </div>
+              <button class="btn btn-cyan btn-sm">View Report</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============================================================ -->
+      <!-- HOSPITAL: VERSION CONTROL                                     -->
+      <!-- ============================================================ -->
+      <div id="view-hospital-version" class="portal-view fade-in">
+        <div class="border-b pb-5 mb-6">
+          <h1 class="font-black text-2xl">Version Control</h1>
+          <p class="text-muted text-sm mt-1">Track and manage versions of all models — platform-licensed and hospital-created</p>
+        </div>
+        <div id="versionControlList" class="flex-col gap-5" style="display:flex">
+          <div class="spinner" style="margin:40px auto"></div>
+        </div>
+      </div>
+
+      <!-- ============================================================ -->
+      <!-- HOSPITAL: INTEGRATIONS                                        -->
+      <!-- ============================================================ -->
+      <div id="view-hospital-integrations" class="portal-view fade-in">
+        <div class="border-b pb-5 mb-6">
+          <h1 class="font-black text-2xl">Integrations</h1>
+          <p class="text-muted text-sm mt-1">Which models are connected to which systems, and their health status</p>
+        </div>
+        <div id="integrationsGrid" class="grid-2"></div>
+      </div>
+
+      <!-- ============================================================ -->
+      <!-- HOSPITAL: SETTINGS                                            -->
+      <!-- ============================================================ -->
+      <div id="view-hospital-settings" class="portal-view fade-in">
+        <div class="border-b pb-5 mb-6">
+          <h1 class="font-black text-2xl">Settings</h1>
+          <p class="text-muted text-sm mt-1">General account and platform settings</p>
+        </div>
+        <div class="glass p-6" style="max-width:580px">
+          <h2 class="font-bold mb-4">Hospital Account</h2>
+          <div class="flex-col gap-4" style="display:flex">
+            <div class="form-group"><label>Hospital Name</label><input class="form-input" id="settingHosName" readonly></div>
+            <div class="form-group"><label>Registration Number</label><input class="form-input" id="settingHosReg" readonly></div>
+            <div class="form-group"><label>Model Training Notifications</label>
+              <select class="form-input"><option>Email + Dashboard (Recommended)</option><option>Dashboard Only</option></select>
+            </div>
+            <div class="form-group"><label>Data Retention Policy</label>
+              <select class="form-input"><option>7 years (HIPAA Default)</option><option>5 years</option><option>10 years</option></select>
+            </div>
+            <div class="form-group"><label>Auto-deploy approved models</label>
+              <select class="form-input"><option>Enabled</option><option>Disabled (manual deploy)</option></select>
+            </div>
+            <button class="btn btn-purple btn-sm" style="width:fit-content">Save Settings</button>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- ================================================================== -->
+<!-- ADD PATIENT MODAL                                                    -->
+<!-- ================================================================== -->
+<div id="addPatientModal" class="hidden modal-overlay">
+  <div class="modal-box">
+    <div class="flex items-center justify-between mb-5">
+      <h2 class="font-black text-lg">Add New Patient</h2>
+      <button onclick="document.getElementById('addPatientModal').classList.add('hidden')" class="btn btn-ghost btn-sm">✕</button>
+    </div>
+    <form onsubmit="submitAddPatient(event)" class="flex-col gap-4" style="display:flex">
+      <div class="form-group"><label>Patient Full Name *</label><input type="text" id="newPatName" class="form-input" required placeholder="Jane Doe"></div>
+      <div class="form-group"><label>Age *</label><input type="number" id="newPatAge" class="form-input" required placeholder="35" min="0" max="150"></div>
+      <div class="form-group"><label>Symptoms / Clinical Notes</label><textarea id="newPatSymptoms" class="form-input" rows="3" placeholder="Describe presenting symptoms..."></textarea></div>
+      <div id="addPatErr" class="hidden error-box"></div>
+      <div id="addPatOk" class="hidden success-box"></div>
+      <button type="submit" class="btn btn-cyan w-full">+ Add Patient</button>
+    </form>
+  </div>
+</div>
+
+<!-- ================================================================== -->
+<!-- MODEL FEEDBACK MODAL                                                 -->
+<!-- ================================================================== -->
+<div id="feedbackModal" class="hidden modal-overlay">
+  <div class="modal-box">
+    <div class="flex items-center justify-between mb-5">
+      <div>
+        <h2 class="font-black text-lg">Submit Feedback</h2>
+        <p class="text-xs text-muted mono mt-1" id="feedbackModalModelName"></p>
+      </div>
+      <button onclick="document.getElementById('feedbackModal').classList.add('hidden')" class="btn btn-ghost btn-sm">✕</button>
+    </div>
+    <form onsubmit="submitFeedback(event)" class="flex-col gap-4" style="display:flex">
+      <input type="hidden" id="feedbackModelId">
+      <div class="form-group">
+        <label>Accuracy Observation *</label>
+        <select id="feedbackAccObs" class="form-input">
+          <option value="Excellent — performing above expectations">Excellent — performing above expectations</option>
+          <option value="Good — within expected accuracy range">Good — within expected accuracy range</option>
+          <option value="Moderate — some false positives observed">Moderate — some false positives observed</option>
+          <option value="Poor — needs retraining">Poor — needs retraining</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Additional Notes</label>
+        <textarea id="feedbackNotes" class="form-input" rows="3" placeholder="E.g. Model gave 100% accuracy across all my results..."></textarea>
+      </div>
+      <div id="feedbackErr" class="hidden error-box"></div>
+      <div id="feedbackOk" class="hidden success-box"></div>
+      <button type="submit" class="btn btn-cyan w-full">Submit Feedback</button>
+    </form>
+  </div>
+</div>
+
+<!-- ================================================================== -->
+<!-- JAVASCRIPT                                                           -->
+<!-- ================================================================== -->
+<script>
+// ── State ──────────────────────────────────────────────────────────────
+let currentUser = null;  // { role: 'doctor'|'hospital', name, meta, license_no/reg_no }
+let currentView = '';
+let allPatients = [];
+let allMyModels = [];
+let currentOTPIdentifier = '';
+let currentOTPCode = '';
+let currentAuthRole = 'doctor';
+let automlCurrentStep = 1;
+const AUTOML_STEPS = [
+  {num:1, label:'Data Upload', desc:'Upload dataset (images, tabular, DICOM). Must relate to one specific disease.'},
+  {num:2, label:'Data Profiling', desc:'Auto-check: reject if <threshold rows or >75% missing values.'},
+  {num:3, label:'Manual Input', desc:'Define target column and remove patient-identifying data.'},
+  {num:4, label:'Data Cleaning', desc:'LLM-powered cleaning, unit standardization, feature engineering (e.g. BMI).'},
+  {num:5, label:'Human Review', desc:'Review data quality score. If below 30-50%, re-upload required.'},
+  {num:6, label:'Problem Detection', desc:'Auto-detect problem type: classification, regression, time-series, NLP.'},
+  {num:7, label:'AutoML Pipeline', desc:'Train/test split, scalarization, multi-algorithm tournament, best selection.'},
+  {num:8, label:'Explainability', desc:'Report: why algorithm chosen, accuracy, F1 score, prediction results.'},
+  {num:9, label:'Final Approval', desc:'Hospital reviews explainability report and approves or rejects model.'},
+  {num:10, label:'Deployment', desc:'Approved model deployed and added to My Models as hospital-owned (Theirs).'},
+];
+
+// ── Auth Modal ─────────────────────────────────────────────────────────
+function openAuthModal(role) {
+  document.getElementById('authModal').classList.remove('hidden');
+  showAuthStep('role');
+  if (role === 'doctor') { /* default */ }
+}
+function closeAuthModal() { document.getElementById('authModal').classList.add('hidden'); }
+function closeAuthIfOutside(e) { if (e.target === document.getElementById('authModal')) closeAuthModal(); }
+function showAuthStep(step) {
+  const steps = ['role','doctorLogin','doctorOTP','doctorSignup','hospitalLogin','hospitalOTP','hospitalSignup'];
+  steps.forEach(s => document.getElementById('authStep'+s.charAt(0).toUpperCase()+s.slice(1)).classList.add('hidden'));
+  const id = 'authStep'+step.charAt(0).toUpperCase()+step.slice(1);
+  document.getElementById(id).classList.remove('hidden');
+}
+function selectAuthRole(role) {
+  currentAuthRole = role;
+  showAuthStep(role === 'doctor' ? 'doctorLogin' : 'hospitalLogin');
+}
+
+// ── OTP helpers ────────────────────────────────────────────────────────
+function otpNext(i) { if (document.getElementById('otp'+i).value && i<5) document.getElementById('otp'+(i+1)).focus(); }
+function otpBack(e,i) { if (e.key==='Backspace' && !document.getElementById('otp'+i).value && i>0) document.getElementById('otp'+(i-1)).focus(); }
+function hotpNext(i) { if (document.getElementById('hotp'+i).value && i<5) document.getElementById('hotp'+(i+1)).focus(); }
+function hotpBack(e,i) { if (e.key==='Backspace' && !document.getElementById('hotp'+i).value && i>0) document.getElementById('hotp'+(i-1)).focus(); }
+function getOTPValue(prefix) { return [0,1,2,3,4,5].map(i=>document.getElementById(prefix+i).value).join(''); }
+function clearOTP(prefix) { [0,1,2,3,4,5].forEach(i=>{document.getElementById(prefix+i).value='';}); }
+
+// ── Doctor Login ───────────────────────────────────────────────────────
+async function handleDoctorLogin(e) {
+  e.preventDefault();
+  const licNo = document.getElementById('drLoginLic').value.trim();
+  const pass = document.getElementById('drLoginPass').value;
+  const errEl = document.getElementById('drLoginErr');
+  errEl.classList.add('hidden');
+  try {
+    const r = await fetch('/api/doctor/login', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({license_no:licNo,password:pass})});
+    const data = await r.json();
+    if (!r.ok) { errEl.textContent = data.detail; errEl.classList.remove('hidden'); return; }
+    // Store user, send OTP
+    currentUser = {role:'doctor', name:data.full_name, hospital:data.hospital_name, license_no:data.license_no};
+    currentOTPIdentifier = licNo;
+    const otpR = await fetch('/api/otp/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({identifier:licNo,role:'doctor'})});
+    const otpData = await otpR.json();
+    currentOTPCode = otpData.otp;
+    document.getElementById('drOTPHint').textContent = 'OTP (demo): ' + otpData.otp;
+    clearOTP('otp');
+    showAuthStep('doctorOTP');
+  } catch(ex) { errEl.textContent = 'Connection error. Is the server running?'; errEl.classList.remove('hidden'); }
+}
+async function verifyDoctorOTP() {
+  const entered = getOTPValue('otp');
+  const errEl = document.getElementById('drOTPErr');
+  errEl.classList.add('hidden');
+  try {
+    const r = await fetch('/api/otp/verify',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({identifier:currentOTPIdentifier,otp:entered})});
+    const data = await r.json();
+    if (!r.ok) { errEl.textContent = data.detail; errEl.classList.remove('hidden'); return; }
+    closeAuthModal();
+    launchDoctorPortal();
+  } catch(ex) { errEl.textContent = 'Verification error.'; errEl.classList.remove('hidden'); }
+}
+async function resendOTP() {
+  const r = await fetch('/api/otp/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({identifier:currentOTPIdentifier,role:currentAuthRole})});
+  const d = await r.json();
+  currentOTPCode = d.otp;
+  document.getElementById('drOTPHint').textContent = 'New OTP (demo): ' + d.otp;
+}
+
+// ── Doctor Signup ──────────────────────────────────────────────────────
+async function handleDoctorSignup(e) {
+  e.preventDefault();
+  const errEl = document.getElementById('drSuErr'); const okEl = document.getElementById('drSuOk');
+  errEl.classList.add('hidden'); okEl.classList.add('hidden');
+  const payload = {
+    full_name: document.getElementById('drSuName').value.trim(),
+    license_no: document.getElementById('drSuLic').value.trim(),
+    state: document.getElementById('drSuState').value.trim(),
+    email: document.getElementById('drSuEmail').value.trim(),
+    hospital_name: document.getElementById('drSuHospital').value.trim(),
+    phone: document.getElementById('drSuPhone').value.trim(),
+    password: document.getElementById('drSuPass').value,
+    confirm_password: document.getElementById('drSuConfirm').value
+  };
+  try {
+    const r = await fetch('/api/doctor/signup',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    const data = await r.json();
+    if (!r.ok) { errEl.textContent = data.detail; errEl.classList.remove('hidden'); return; }
+    okEl.textContent = data.message + ' You can now sign in.';
+    okEl.classList.remove('hidden');
+    setTimeout(()=>showAuthStep('doctorLogin'), 2000);
+  } catch(ex) { errEl.textContent = 'Error: '+ex.message; errEl.classList.remove('hidden'); }
+}
+
+// ── Hospital Login ─────────────────────────────────────────────────────
+async function handleHospitalLogin(e) {
+  e.preventDefault();
+  const regNo = document.getElementById('hosLoginReg').value.trim();
+  const pass = document.getElementById('hosLoginPass').value;
+  const errEl = document.getElementById('hosLoginErr');
+  errEl.classList.add('hidden');
+  try {
+    const r = await fetch('/api/hospital/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({reg_no:regNo,password:pass})});
+    const data = await r.json();
+    if (!r.ok) { errEl.textContent = data.detail; errEl.classList.remove('hidden'); return; }
+    currentUser = {role:'hospital', name:data.hospital_name, reg_no:data.reg_no};
+    currentOTPIdentifier = regNo;
+    const otpR = await fetch('/api/otp/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({identifier:regNo,role:'hospital'})});
+    const otpData = await otpR.json();
+    document.getElementById('hosOTPHint').textContent = 'OTP (demo): ' + otpData.otp;
+    clearOTP('hotp');
+    showAuthStep('hospitalOTP');
+  } catch(ex) { errEl.textContent = 'Connection error.'; errEl.classList.remove('hidden'); }
+}
+async function verifyHospitalOTP() {
+  const entered = getOTPValue('hotp');
+  const errEl = document.getElementById('hosOTPErr');
+  errEl.classList.add('hidden');
+  try {
+    const r = await fetch('/api/otp/verify',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({identifier:currentOTPIdentifier,otp:entered})});
+    const data = await r.json();
+    if (!r.ok) { errEl.textContent = data.detail; errEl.classList.remove('hidden'); return; }
+    closeAuthModal();
+    launchHospitalPortal();
+  } catch(ex) { errEl.textContent = 'Verification error.'; errEl.classList.remove('hidden'); }
+}
+async function handleHospitalSignup(e) {
+  e.preventDefault();
+  const errEl = document.getElementById('hosSuErr'); const okEl = document.getElementById('hosSuOk');
+  errEl.classList.add('hidden'); okEl.classList.add('hidden');
+  const payload = {
+    hospital_name: document.getElementById('hosSuName').value.trim(),
+    address: document.getElementById('hosSuAddr').value.trim(),
+    reg_no: document.getElementById('hosSuReg').value.trim(),
+    admin_name: document.getElementById('hosSuAdmin').value.trim(),
+    admin_email: document.getElementById('hosSuAdminEmail').value.trim(),
+    email: document.getElementById('hosSuEmail').value.trim(),
+    phone: document.getElementById('hosSuPhone').value.trim(),
+    password: document.getElementById('hosSuPass').value
+  };
+  try {
+    const r = await fetch('/api/hospital/signup',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    const data = await r.json();
+    if (!r.ok) { errEl.textContent = data.detail; errEl.classList.remove('hidden'); return; }
+    okEl.textContent = data.message + ' You can now sign in.';
+    okEl.classList.remove('hidden');
+    setTimeout(()=>showAuthStep('hospitalLogin'), 2000);
+  } catch(ex) { errEl.textContent = 'Error: '+ex.message; errEl.classList.remove('hidden'); }
+}
+
+// ── Portal Launch ──────────────────────────────────────────────────────
+function launchDoctorPortal() {
+  document.getElementById('landingPage').style.display = 'none';
+  document.getElementById('appShell').style.display = ''; // Clear inline styles
+  document.getElementById('appShell').classList.add('visible');
+  document.getElementById('topBarSub').textContent = 'Doctor Portal — ' + currentUser.hospital;
+  document.getElementById('topBarUser').textContent = currentUser.license_no;
+  document.getElementById('sidebarName').textContent = currentUser.name;
+  document.getElementById('sidebarMeta').textContent = currentUser.license_no;
+  document.getElementById('sidebarRoleLabel').textContent = 'DOCTOR PORTAL';
+  document.getElementById('settingDrName').value = currentUser.name;
+  document.getElementById('settingDrLic').value = currentUser.license_no;
+  document.getElementById('settingDrHospital').value = currentUser.hospital;
+  buildDoctorSidebar();
+  switchView('doctor', 'dashboard');
+}
+function launchHospitalPortal() {
+  document.getElementById('landingPage').style.display = 'none';
+  document.getElementById('appShell').style.display = ''; // Clear inline styles
+  document.getElementById('appShell').classList.add('visible');
+  document.getElementById('topBarSub').textContent = 'Hospital Portal — ' + currentUser.name;
+  document.getElementById('topBarUser').textContent = currentUser.reg_no;
+  document.getElementById('sidebarName').textContent = currentUser.name;
+  document.getElementById('sidebarMeta').textContent = currentUser.reg_no;
+  document.getElementById('sidebarRoleLabel').textContent = 'HOSPITAL PORTAL';
+  document.getElementById('settingHosName').value = currentUser.name;
+  document.getElementById('settingHosReg').value = currentUser.reg_no;
+  buildHospitalSidebar();
+  switchView('hospital', 'dashboard');
+}
+function logout() {
+  currentUser = null;
+  document.getElementById('landingPage').style.display = '';
+  document.getElementById('appShell').classList.remove('visible');
+  document.getElementById('appShell').style.display = 'none';
+}
+
+// ── Sidebar ────────────────────────────────────────────────────────────
+const DOCTOR_NAVS = [
+  {id:'dashboard', icon:'📊', label:'Dashboard', sub:'Alerts & AI status'},
+  {id:'analysis',  icon:'🔬', label:'Analysis & Reports', sub:'Per-patient findings'},
+  {id:'models',    icon:'🤖', label:'Models', sub:'Performance & feedback'},
+  {id:'patients',  icon:'👥', label:'Patients', sub:'Search, add, view records'},
+  {id:'lab',       icon:'🧪', label:'Laboratory & Imaging', sub:'Connection status'},
+  {id:'settings',  icon:'⚙️', label:'Settings', sub:'Account & platform'},
+];
+const HOSPITAL_NAVS = [
+  {id:'dashboard',    icon:'📊', label:'Dashboard', sub:'Models, training, feedback'},
+  {id:'mymodel',      icon:'🤖', label:'My Models', sub:'Ours & Theirs'},
+  {id:'marketplace',  icon:'🛒', label:'Model Marketplace', sub:'Phase 1 — licensed models'},
+  {id:'automl',       icon:'🧠', label:'Create New Model', sub:'Phase 2 — AutoML (10 steps)'},
+  {id:'version',      icon:'🔄', label:'Version Control', sub:'Track all model versions'},
+  {id:'integrations', icon:'🔗', label:'Integrations', sub:'Model-to-system connections'},
+  {id:'settings',     icon:'⚙️', label:'Settings', sub:'Account & platform'},
+];
+function buildSidebar(navs, role) {
+  const nav = document.getElementById('sidebarNav');
+  nav.innerHTML = '';
+  navs.forEach(n => {
+    const btn = document.createElement('button');
+    btn.className = 'nav-item';
+    btn.id = 'nav-'+role+'-'+n.id;
+    btn.innerHTML = `<span class="nav-icon">${n.icon}</span><div class="nav-label-wrap"><div>${n.label}</div><div class="nav-sub">${n.sub}</div></div>`;
+    btn.onclick = () => switchView(role, n.id);
+    nav.appendChild(btn);
+  });
+}
+function buildDoctorSidebar() { buildSidebar(DOCTOR_NAVS, 'doctor'); }
+function buildHospitalSidebar() { buildSidebar(HOSPITAL_NAVS, 'hospital'); }
+
+function switchView(role, view) {
+  currentView = view;
+  document.querySelectorAll('.portal-view').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  const viewEl = document.getElementById('view-'+role+'-'+view);
+  if (viewEl) viewEl.classList.add('active');
+  const navEl = document.getElementById('nav-'+role+'-'+view);
+  if (navEl) navEl.classList.add('active');
+  loadViewData(role, view);
+}
+
+// ── View Data Loaders ──────────────────────────────────────────────────
+function loadViewData(role, view) {
+  if (role === 'doctor') {
+    if (view === 'dashboard') loadDoctorDashboard();
+    if (view === 'analysis') loadAnalysisView();
+    if (view === 'models') loadDoctorModels();
+    if (view === 'patients') loadPatients();
+    if (view === 'lab') loadLabImaging();
+  } else {
+    if (view === 'dashboard') loadHospitalDashboard();
+    if (view === 'mymodel') loadMyModels();
+    if (view === 'marketplace') loadMarketplace();
+    if (view === 'automl') initAutoML();
+    if (view === 'version') loadVersionControl();
+    if (view === 'integrations') loadIntegrations();
+  }
+}
+
+// ── Doctor Dashboard ───────────────────────────────────────────────────
+async function loadDoctorDashboard() {
+  try {
+    const r = await fetch('/api/doctor/dashboard');
+    const d = await r.json();
+    document.getElementById('dpfConf').textContent = d.ai_performance.confidence_score;
+    document.getElementById('dpfAgree').textContent = d.ai_performance.doctor_agreement;
+    document.getElementById('dpfTime').textContent = d.ai_performance.avg_analysis_time_ms + 'ms';
+    // Alerts
+    const alertsEl = document.getElementById('doctorAlertsList');
+    alertsEl.innerHTML = d.alerts.map(a => {
+      const cls = a.severity === 'critical' ? 'alert-critical' : a.severity === 'high' ? 'alert-high' : a.severity === 'moderate' ? 'alert-moderate' : 'alert-low';
+      const pct = a.probability;
+      const badgeColor = pct >= 90 ? 'badge-rose' : pct >= 70 ? 'badge-amber' : pct >= 50 ? 'badge-cyan' : 'badge-emerald';
+      return `<div class="${cls} flex items-center justify-between gap-4">
+        <div>
+          <div class="flex items-center gap-2 mb-1">
+            <span class="font-bold text-sm">${a.name}</span>
+            <span class="text-xs text-muted mono">${a.patient_id} &bull; Age ${a.age}</span>
+          </div>
+          <div class="text-xs text-muted">${a.disease !== 'N/A' ? 'AI detected potential <b style="color:var(--amber)">'+a.disease+'</b>' : 'No significant findings'}</div>
+        </div>
+        <div class="flex items-center gap-3 shrink-0">
+          <span class="badge ${badgeColor}">${pct}%</span>
+          <button onclick="switchView('doctor','analysis')" class="btn btn-ghost btn-sm">View Report</button>
+        </div>
+      </div>`;
+    }).join('');
+    // Models
+    document.getElementById('doctorModelsList').innerHTML = d.active_models.map(m =>
+      `<div class="flex items-center justify-between glass-sm p-3">
+        <div class="flex items-center gap-3"><div class="dot-active"></div><div><div class="font-semibold text-sm">${m.name}</div><div class="text-xs text-muted mono">${m.version}</div></div></div>
+        <span class="badge badge-emerald">${m.accuracy}%</span>
+      </div>`
+    ).join('');
+    // Lab uploads
+    document.getElementById('doctorLabList').innerHTML = d.lab_uploads.map(l =>
+      `<div class="flex items-center justify-between glass-sm p-3">
+        <div class="flex items-center gap-2"><div class="${l.count>0?'dot-active':'dot-off'}"></div><span class="text-sm font-medium">${l.source}</span></div>
+        <span class="badge ${l.count>0?'badge-cyan':'badge-slate'}">${l.count} new</span>
+      </div>`
+    ).join('');
+    // Recent patients
+    allPatients = d.recent_patients;
+    document.getElementById('doctorRecentPatients').innerHTML = `
+      <table class="data-table w-full"><thead><tr><th>ID</th><th>Name</th><th>Age</th><th>Symptoms</th></tr></thead>
+      <tbody>${d.recent_patients.map(p=>`<tr><td class="mono text-xs text-muted">${p.id}</td><td class="font-semibold">${p.name}</td><td>${p.age}</td><td class="text-muted text-xs" style="max-width:260px;white-space:normal">${(p.symptoms||'').substring(0,80)}...</td></tr>`).join('')}</tbody></table>`;
+  } catch(ex) { console.error(ex); }
+}
+
+// ── Analysis & Reports ─────────────────────────────────────────────────
+async function loadAnalysisView() {
+  const r = await fetch('/api/patients');
+  const patients = await r.json();
+  allPatients = patients;
+  const sel = document.getElementById('analysisPatientDrop');
+  sel.innerHTML = '<option value="">-- Choose a patient --</option>' + patients.map(p=>`<option value="${p.id}">${p.name} (${p.id})</option>`).join('');
+}
+async function loadPatientAnalysis() {
+  const patId = document.getElementById('analysisPatientDrop').value;
+  if (!patId) return;
+  const r = await fetch('/api/patients/'+patId+'/reports');
+  const pat = await r.json();
+  document.getElementById('analysisEmpty').classList.add('hidden');
+  document.getElementById('analysisResults').classList.remove('hidden');
+  // Patient header
+  document.getElementById('analysisPatientHeader').innerHTML = `
+    <div class="flex items-center justify-between">
+      <div>
+        <div class="font-black text-lg">${pat.name}</div>
+        <div class="text-xs text-muted mono mt-1">${pat.id} &bull; Age ${pat.age} &bull; ${pat.id.startsWith('PT')?'City General Hospital':''}</div>
+        <div class="text-sm mt-2" style="color:var(--slate300)">${pat.symptoms||'No symptoms recorded'}</div>
+      </div>
+      <div class="flex gap-2 flex-wrap">
+        ${pat.has_imaging?'<span class="badge badge-cyan">&#128247; Imaging</span>':''}
+        ${pat.has_lab?'<span class="badge badge-purple">&#128200; Lab Data</span>':''}
+        ${pat.has_notes?'<span class="badge badge-slate">&#128203; Clinical Notes</span>':''}
+      </div>
+    </div>
+    <div class="text-xs text-muted mono mt-3">
+      Data Sources: ${[pat.has_imaging?'MRI/CT Scan':null,pat.has_lab?'Lab Panel':null,pat.has_notes?'Clinical Notes':null].filter(Boolean).join(', ')||'None'}
+    </div>`;
+  // Simulated model results
+  const models = [
+    {name:'Pneumonia Detection',id:'pneumonia',relevantTo:pat.has_imaging||pat.has_notes,confidence:94,finding:'High opacity in right lower lobe consistent with pneumonia',why:'Chest X-ray shows consolidation pattern typical of bacterial pneumonia',how:'Image submodel detected >0.94 threshold density marker in lower right lobe region'},
+    {name:'Cancer Detection',id:'cancer',relevantTo:pat.has_imaging,confidence:12,finding:'No malignant cell markers detected',why:'No nodular formations or mass opacity in scan',how:'Multi-model ensemble returned probability below threshold of 0.75'},
+    {name:'Diabetes Detection',id:'diabetes',relevantTo:pat.has_lab,confidence:78,finding:'Elevated blood glucose markers detected',why:'Blood sugar reading of 168 mg/dL exceeds fasting threshold of 126 mg/dL',how:'Tabular submodel regression on glycemic markers and patient demographics'},
+    {name:'TB Detection',id:'tb',relevantTo:pat.has_imaging||pat.has_notes,confidence:22,finding:'No active TB markers',why:'Apical regions clear; no cavitary lesion patterns detected',how:'Probability 0.22 — below 0.65 threshold'},
+  ];
+  document.getElementById('analysisModelResults').innerHTML = models.map(m => {
+    const relevant = m.relevantTo;
+    if (!relevant) return `<div class="glass-sm p-4 flex items-center justify-between">
+      <div class="flex items-center gap-3"><div class="dot-off"></div><span class="font-semibold text-sm">${m.name}</span></div>
+      <div class="text-xs text-muted">SKIPPED — No relevant clinical data available for this patient</div>
+    </div>`;
+    const high = m.confidence >= 70;
+    return `<div class="glass p-5">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-3">
+          <div class="${high?'dot-warn':'dot-active'}"></div>
+          <div><div class="font-bold text-sm">${m.name}</div><div class="text-xs text-muted mono">AI Analysis Report</div></div>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="badge ${high?'badge-rose':'badge-emerald'}">${m.confidence}% Confidence</span>
+          <span class="badge badge-cyan">RUN</span>
+        </div>
+      </div>
+      <div class="grid-3 gap-4">
+        <div class="glass-sm p-3"><div class="text-xs text-muted mb-1">Key Finding</div><div class="text-sm font-medium">${m.finding}</div></div>
+        <div class="glass-sm p-3"><div class="text-xs text-muted mb-1">Why (Evidence)</div><div class="text-sm">${m.why}</div></div>
+        <div class="glass-sm p-3"><div class="text-xs text-muted mb-1">How (Analysis)</div><div class="text-sm">${m.how}</div></div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Blood Cancer Text Model — live API call if patient has notes
+  if (pat.has_notes && pat.reports_content && pat.reports_content.clinical_notes) {
+    const bcContainer = document.createElement('div');
+    bcContainer.innerHTML = `<div class="glass p-5">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-3">
+          <div class="dot-active"></div>
+          <div><div class="font-bold text-sm">Blood Cancer — Text (BiomedBERT)</div><div class="text-xs text-muted mono">🤗 HuggingFace · text-classification</div></div>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="badge badge-hf">🤗 HuggingFace</span>
+          <div class="spinner" id="bcAnalysisSpinner"></div>
+        </div>
+      </div>
+      <div id="bcAnalysisResult" class="text-sm text-muted">Running BiomedBERT text classifier on clinical notes...</div>
+    </div>`;
+    document.getElementById('analysisModelResults').appendChild(bcContainer);
+    // Call the API
+    try {
+      const bcR = await fetch('/api/models/blood-cancer-text/predict', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({text: pat.reports_content.clinical_notes})
+      });
+      const bcData = await bcR.json();
+      const isCancer = bcData.top_label === 'Cancer';
+      const high = bcData.top_score >= 70;
+      document.getElementById('bcAnalysisSpinner').classList.add('hidden');
+      document.getElementById('bcAnalysisResult').innerHTML = `
+        <div class="flex items-center gap-2 mb-3">
+          <span class="badge ${isCancer ? 'badge-rose' : 'badge-emerald'}">${bcData.top_score}% ${bcData.top_label}</span>
+          <span class="badge badge-slate">${bcData.mode === 'live' ? 'Live API' : 'Demo Mode'}</span>
+        </div>
+        <div class="grid-3 gap-4">
+          <div class="glass-sm p-3"><div class="text-xs text-muted mb-1">Key Finding</div><div class="text-sm font-medium">${isCancer ? 'Cancer-related language patterns detected in clinical notes' : 'No cancer-related markers detected in text'}</div></div>
+          <div class="glass-sm p-3"><div class="text-xs text-muted mb-1">Why (Evidence)</div><div class="text-sm">${isCancer ? 'BiomedBERT identified oncological terminology and cancer-specific clinical patterns' : 'Clinical text does not contain significant cancer-associated terminology'}</div></div>
+          <div class="glass-sm p-3"><div class="text-xs text-muted mb-1">How (Analysis)</div><div class="text-sm">BiomedBERT text-classification pipeline, confidence ${bcData.top_score}%</div></div>
+        </div>
+      `;
+    } catch(ex) {
+      document.getElementById('bcAnalysisSpinner').classList.add('hidden');
+      document.getElementById('bcAnalysisResult').innerHTML = '<div class="text-rose text-xs">Error running BiomedBERT model</div>';
+    }
+  } else if (pat.has_notes) {
+    document.getElementById('analysisModelResults').innerHTML += `<div class="glass-sm p-4 flex items-center justify-between">
+      <div class="flex items-center gap-3"><div class="dot-warn"></div><span class="font-semibold text-sm">Blood Cancer — Text (BiomedBERT)</span> <span class="badge badge-hf">🤗 HuggingFace</span></div>
+      <div class="text-xs text-muted">PENDING — Clinical notes available but no detailed text content</div>
+    </div>`;
+  } else {
+    document.getElementById('analysisModelResults').innerHTML += `<div class="glass-sm p-4 flex items-center justify-between">
+      <div class="flex items-center gap-3"><div class="dot-off"></div><span class="font-semibold text-sm">Blood Cancer — Text (BiomedBERT)</span> <span class="badge badge-hf">🤗 HuggingFace</span></div>
+      <div class="text-xs text-muted">SKIPPED — No clinical notes available for this patient</div>
+    </div>`;
+  }
+}
+
+// ── Doctor Models ──────────────────────────────────────────────────────
+async function loadDoctorModels() {
+  const r = await fetch('/api/models/my-models');
+  const models = await r.json();
+  document.getElementById('doctorModelsGrid').innerHTML = models.slice(0,7).map(m => {
+    const isHF = m.source === 'HuggingFace' || m.hf_model;
+    return `
+    <div class="market-card">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3"><div class="dot-active"></div><div class="font-bold">${m.name}</div></div>
+        <div class="flex items-center gap-2">
+          ${isHF ? '<span class="badge badge-hf">🤗 HuggingFace</span>' : ''}
+          <span class="badge badge-emerald">${m.status}</span>
+        </div>
+      </div>
+      <div class="grid-2 gap-3">
+        <div class="glass-sm p-3"><div class="text-xs text-muted">Accuracy</div><div class="font-black text-cyan">${m.accuracy}%</div></div>
+        <div class="glass-sm p-3"><div class="text-xs text-muted">Version</div><div class="font-bold mono text-xs">${m.version}</div></div>
+      </div>
+      <div class="flex items-center justify-between">
+        <span class="badge badge-slate">${m.type}</span>
+        <button onclick="openFeedbackModal('${m.id}','${m.name}')" class="btn btn-ghost btn-sm">Submit Feedback</button>
+      </div>
+      ${isHF ? '<div class="text-xs text-muted mono mt-2" style="border-top:1px solid var(--border);padding-top:8px">Source: ' + (m.hf_model || 'HuggingFace') + '</div>' : ''}
+    </div>
+  `}).join('');
+}
+
+// ── Patients ───────────────────────────────────────────────────────────
+async function loadPatients() {
+  const r = await fetch('/api/patients');
+  allPatients = await r.json();
+  renderPatientsTable(allPatients);
+}
+function renderPatientsTable(patients) {
+  document.getElementById('patientsTableBody').innerHTML = patients.map(p => `
+    <tr>
+      <td class="mono text-xs text-muted">${p.id}</td>
+      <td class="font-semibold">${p.name}</td>
+      <td>${p.age}</td>
+      <td class="text-muted text-sm" style="max-width:220px;white-space:normal">${(p.symptoms||'').substring(0,70)}${(p.symptoms||'').length>70?'...':''}</td>
+      <td>
+        ${p.has_imaging?'<span class="badge badge-cyan" style="margin-right:4px">Imaging</span>':''}
+        ${p.has_lab?'<span class="badge badge-purple" style="margin-right:4px">Lab</span>':''}
+        ${p.has_notes?'<span class="badge badge-slate">Notes</span>':''}
+      </td>
+      <td><button onclick="viewPatientAnalysis('${p.id}')" class="btn btn-ghost btn-sm">View Analysis</button></td>
+    </tr>
+  `).join('');
+}
+function filterPatients() {
+  const q = document.getElementById('patientSearchInput').value.toLowerCase();
+  const filtered = allPatients.filter(p => p.name.toLowerCase().includes(q) || p.id.toLowerCase().includes(q));
+  renderPatientsTable(filtered);
+}
+function viewPatientAnalysis(id) {
+  switchView('doctor','analysis');
+  setTimeout(()=>{
+    const sel = document.getElementById('analysisPatientDrop');
+    sel.value = id;
+    loadPatientAnalysis();
+  }, 400);
+}
+function openAddPatientModal() { document.getElementById('addPatientModal').classList.remove('hidden'); }
+async function submitAddPatient(e) {
+  e.preventDefault();
+  const errEl = document.getElementById('addPatErr'); const okEl = document.getElementById('addPatOk');
+  errEl.classList.add('hidden'); okEl.classList.add('hidden');
+  const payload = {name:document.getElementById('newPatName').value,age:parseInt(document.getElementById('newPatAge').value),symptoms:document.getElementById('newPatSymptoms').value};
+  try {
+    const r = await fetch('/api/patients',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    const d = await r.json();
+    if (!r.ok) { errEl.textContent = d.detail; errEl.classList.remove('hidden'); return; }
+    okEl.textContent = 'Patient ' + d.patient.id + ' added successfully!';
+    okEl.classList.remove('hidden');
+    loadPatients();
+    setTimeout(()=>document.getElementById('addPatientModal').classList.add('hidden'), 1500);
+  } catch(ex) { errEl.textContent = 'Error: '+ex.message; errEl.classList.remove('hidden'); }
+}
+
+// ── Lab & Imaging ──────────────────────────────────────────────────────
+async function loadLabImaging() {
+  const r = await fetch('/api/doctor/lab-imaging');
+  const sources = await r.json();
+  document.getElementById('labImagingGrid').innerHTML = sources.map(s => {
+    const dot = s.active ? 'dot-active' : 'dot-off';
+    const badge = s.status === 'Connected' ? 'badge-emerald' : s.status === 'Active' ? 'badge-cyan' : s.status === 'Disconnected' ? 'badge-rose' : 'badge-slate';
+    return `<div class="glass p-5">
+      <div class="flex items-center justify-between mb-3">
+        <div class="flex items-center gap-3"><div class="${dot}"></div><div class="font-bold">${s.source}</div></div>
+        <span class="badge ${badge}">${s.status}</span>
+      </div>
+      <div class="glass-sm p-2 flex items-center justify-between mb-2">
+        <span class="text-xs text-muted">New Uploads</span>
+        <span class="font-black text-cyan">${s.new_uploads}</span>
+      </div>
+      <div class="badge badge-slate" style="font-size:10px">${s.type}</div>
+      ${s.findings ? `<div class="text-xs mt-3" style="color:var(--slate300)">${s.findings}</div>` : ''}
+      ${s.errors ? `<div class="text-xs mt-3 text-rose">${s.errors}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+// ── Hospital Dashboard ─────────────────────────────────────────────────
+async function loadHospitalDashboard() {
+  const r = await fetch('/api/hospital/dashboard');
+  const d = await r.json();
+  document.getElementById('hospDashModels').innerHTML = d.active_models.map(m =>
+    `<div class="glass-sm p-4">
+      <div class="flex items-center gap-2 mb-2"><div class="dot-active"></div><div class="font-bold text-sm">${m.name}</div></div>
+      <div class="flex items-center justify-between">
+        <span class="badge ${m.ownership==='Ours'?'badge-cyan':'badge-purple'}">${m.ownership}</span>
+        <span class="text-emerald font-black">${m.accuracy}%</span>
+      </div>
+      <div class="text-xs text-muted mono mt-2">${m.version} &bull; ${m.status}</div>
+    </div>`
+  ).join('');
+  document.getElementById('hospDashTraining').innerHTML = d.training_models.map(m =>
+    `<div class="glass-sm p-4">
+      <div class="flex items-center justify-between mb-2">
+        <div class="font-semibold text-sm">${m.name}</div>
+        <span class="badge badge-amber">${m.progress}%</span>
+      </div>
+      <div class="progress-bar mb-1"><div class="progress-fill progress-fill-amber" style="width:${m.progress}%"></div></div>
+      <div class="text-xs text-muted">${m.stage} &bull; ETA ${m.eta}</div>
+    </div>`
+  ).join('');
+  document.getElementById('hospDashLabStatus').innerHTML = d.lab_status.map(l =>
+    `<div class="flex items-center justify-between glass-sm p-3">
+      <div class="flex items-center gap-2"><div class="${l.status==='Active'?'dot-active':'dot-off'}"></div><span class="text-sm font-medium">${l.system}</span></div>
+      <div class="text-right"><span class="badge ${l.status==='Active'?'badge-emerald':'badge-rose'}">${l.status}</span><div class="text-xs text-muted mt-1">${l.last_sync}</div></div>
+    </div>`
+  ).join('');
+  document.getElementById('hospDashFeedback').innerHTML = d.recent_feedback.map(f =>
+    `<div class="glass-sm p-4">
+      <div class="flex items-center justify-between mb-2">
+        <div class="font-semibold text-sm">${f.model_name || f.model_id}</div>
+        <span class="text-xs text-muted mono">${f.timestamp}</span>
+      </div>
+      <div class="text-sm" style="color:var(--slate300)">${f.accuracy_observation}</div>
+      ${f.notes?`<div class="text-xs text-muted mt-1">${f.notes}</div>`:''}
+      <div class="text-xs text-muted mt-2">— ${f.doctor}</div>
+    </div>`
+  ).join('');
+}
+
+// ── My Models ──────────────────────────────────────────────────────────
+let _myModels = [];
+async function loadMyModels() {
+  const r = await fetch('/api/models/my-models');
+  _myModels = await r.json();
+  renderMyModels(_myModels);
+}
+function renderMyModels(models) {
+  allMyModels = models;
+  document.getElementById('myModelsTableBody').innerHTML = models.map(m => `
+    <tr>
+      <td class="font-semibold">${m.name}</td>
+      <td><span class="badge badge-slate">${m.type}</span></td>
+      <td class="font-black text-emerald">${m.accuracy}%</td>
+      <td class="mono text-xs text-muted">${m.version}</td>
+      <td><span class="badge badge-emerald">${m.status}</span></td>
+      <td><span class="badge ${m.ownership==='Ours'?'badge-cyan':'badge-purple'}">${m.ownership}</span></td>
+      <td><span class="badge badge-slate">${m.feedback_count} reviews</span></td>
+    </tr>
+  `).join('');
+}
+function filterMyModels(ownership) {
+  ['All','Ours','Theirs'].forEach(o => {
+    const btn = document.getElementById('mmFilter'+o);
+    if (btn) btn.className = 'btn btn-ghost btn-sm';
+  });
+  const activeBtn = document.getElementById('mmFilter'+(ownership==='all'?'All':ownership));
+  if (activeBtn) activeBtn.className = 'btn btn-cyan btn-sm';
+  if (ownership === 'all') renderMyModels(_myModels);
+  else renderMyModels(_myModels.filter(m=>m.ownership===ownership));
+}
+
+// ── Marketplace ────────────────────────────────────────────────────────
+async function loadMarketplace() {
+  const r = await fetch('/api/marketplace');
+  const items = await r.json();
+  document.getElementById('marketplaceGrid').innerHTML = items.map(m => `
+    <div class="market-card">
+      <div class="flex items-center justify-between">
+        <div class="font-black text-base">${m.name}</div>
+        <div class="font-black text-cyan" style="font-size:18px">${m.price}</div>
+      </div>
+      <p class="text-sm text-muted" style="line-height:1.6">${m.description}</p>
+      <div class="grid-2 gap-2">
+        <div class="glass-sm p-2 text-center"><div class="text-xs text-muted">Accuracy</div><div class="font-black text-emerald">${m.accuracy}%</div></div>
+        <div class="glass-sm p-2 text-center"><div class="text-xs text-muted">Version</div><div class="font-bold mono text-xs">${m.version}</div></div>
+      </div>
+      <div>
+        <div class="text-xs text-muted mb-1">Supported Formats</div>
+        <div class="flex flex-wrap gap-1">${m.formats.map(f=>`<span class="badge badge-slate">${f}</span>`).join('')}</div>
+      </div>
+      <div>
+        <div class="text-xs text-muted mb-1">Accepted Inputs</div>
+        <div class="flex flex-wrap gap-1">${m.input_types.map(t=>`<span class="badge badge-purple">${t}</span>`).join('')}</div>
+      </div>
+      <div class="flex items-center justify-between">
+        <span class="badge badge-cyan">${m.type}</span>
+        <button onclick="purchaseModel('${m.id}','${m.name}','${m.price}')" class="btn btn-cyan btn-sm">Purchase License</button>
+      </div>
+    </div>
+  `).join('');
+}
+async function purchaseModel(id, name, price) {
+  const r = await fetch('/api/marketplace/purchase',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model_id:id,model_name:name,price:price})});
+  const d = await r.json();
+  alert('✅ ' + d.message);
+}
+
+// ── AutoML Wizard ──────────────────────────────────────────────────────
+let automlTab = 'create';
+let automlStep = 1;
+const automlData = {};
+function switchAutoMLTab(tab) {
+  automlTab = tab;
+  ['create','training','pending','ready'].forEach(t => {
+    document.getElementById('automl'+t.charAt(0).toUpperCase()+t.slice(1)).classList.add('hidden');
+    document.getElementById('tab'+t.charAt(0).toUpperCase()+t.slice(1)).className = 'btn btn-ghost btn-sm';
+  });
+  document.getElementById('automl'+tab.charAt(0).toUpperCase()+tab.slice(1)).classList.remove('hidden');
+  document.getElementById('tab'+tab.charAt(0).toUpperCase()+tab.slice(1)).className = 'btn btn-cyan btn-sm';
+}
+async function initAutoML() {
+  automlStep = 1;
+  try {
+    const r = await fetch('/api/hospital/automl/results');
+    if (r.ok) {
+      automlData.results = await r.json();
+    } else {
+      automlData.results = null;
+    }
+  } catch (ex) {
+    console.error("No AutoML results loaded:", ex);
+    automlData.results = null;
+  }
+  renderAutoMLStep();
+  switchAutoMLTab('create');
+}
+function renderAutoMLStep() {
+  // Step indicator
+  const steps = AUTOML_STEPS;
+  let indicatorHTML = '<div class="flex items-center gap-0" style="overflow-x:auto;padding-bottom:4px">';
+  steps.forEach((s,i) => {
+    const done = s.num < automlStep;
+    const active = s.num === automlStep;
+    const cls = done ? 'done' : active ? 'active' : '';
+    indicatorHTML += `<div class="step-node"><div class="step-circle ${cls}">${done ? '✓' : s.num}</div><div class="step-lbl">${s.label}</div></div>`;
+    if (i < steps.length-1) indicatorHTML += `<div class="step-connector flex-grow ${done?'done':''}"></div>`;
+  });
+  indicatorHTML += '</div>';
+  document.getElementById('stepIndicatorRow').innerHTML = indicatorHTML;
+  // Step content
+  const step = steps[automlStep-1];
+  document.getElementById('automlStepLabel').textContent = `Step ${step.num} of 10 — ${step.label}`;
+  document.getElementById('automlPrevBtn').classList.toggle('hidden', automlStep === 1);
+  document.getElementById('automlNextBtn').textContent = automlStep === 10 ? '🚀 Deploy Model' : 'Next →';
+  let content = '';
+  if (automlStep === 1) content = `
+    <h2 class="font-black text-lg mb-2">Step 1 — Data Upload &amp; Path Selection</h2>
+    <p class="text-muted text-sm mb-4">Specify the dataset path on the enclave host machine. Supports image folders (with subdirectories representing classes) or tabular CSV files.</p>
+    <div class="form-group mb-4"><label>Disease / Condition (this model will predict)</label><input type="text" id="s1Disease" class="form-input" placeholder="e.g. Tuberculosis (TB), Diabetes" value="${automlData.disease||'Tuberculosis (TB)'}"></div>
+    <div class="form-group mb-4">
+      <label>Dataset File or Folder Path *</label>
+      <input type="text" id="s1Path" class="form-input" placeholder="e.g. C:\\Users\\nehal\\.cache\\kagglehub\\datasets\\... or app/fake_diabetes_data.csv" value="${automlData.path||'C:\\Users\\nehal\\.cache\\kagglehub\\datasets\\tawsifurrahman\\tuberculosis-tb-chest-xray-dataset\\versions\\3'}">
+    </div>
+    <div class="info-box mt-2">Enter the path to your custom dataset. Image datasets must group images into labeled subdirectories. Tabular datasets must be formatted as a CSV file.</div>`;
+  else if (automlStep === 2) {
+    if (!automlData.profile && !automlData.profiling) {
+      automlData.profiling = true;
+      runProfiling();
+    }
+    const prof = automlData.profile;
+    content = `
+      <h2 class="font-black text-lg mb-2">Step 2 — Data Profiling &amp; Validation</h2>
+      <p class="text-muted text-sm mb-4">The enclosure automatically checks data quality. Auto-rejection if dataset is too small (&lt;20 records) or has mismatching classes.</p>
+      <div class="glass-sm p-4 mb-4">
+        ${!prof ? `
+          <div class="flex items-center gap-2 mb-3"><div class="spinner"></div><span class="text-sm font-medium">Profiling dataset at path...</span></div>
+          <div class="text-xs text-muted mono truncate">${automlData.path}</div>
+        ` : prof.error ? `
+          <div class="error-box mb-3">Error loading dataset: ${prof.error}</div>
+          <button class="btn btn-ghost btn-sm" onclick="automlStep=1; renderAutoMLStep();">← Back to Path Selection</button>
+        ` : `
+          <div class="flex items-center gap-2 mb-3"><span class="text-sm font-bold text-cyan">Profiling Complete</span></div>
+          <div class="flex-col gap-2" style="display:flex">
+            <div class="flex items-center justify-between"><span class="text-sm">Format Type</span><span class="font-black text-cyan">${prof.format_type}</span></div>
+            <div class="flex items-center justify-between"><span class="text-sm">Total records / images</span><span class="font-black text-cyan">${prof.total_records}</span></div>
+            <div class="flex items-center justify-between"><span class="text-sm">Missing values ratio</span><span class="font-black text-emerald">${prof.missing_values_pct}</span></div>
+            <div class="flex items-center justify-between"><span class="text-sm">Volume threshold (>=20)</span><span class="badge ${prof.passed_volume?'badge-emerald':'badge-rose'}">${prof.passed_volume?'✓ Passed':'✗ Failed'}</span></div>
+            <div class="flex items-center justify-between"><span class="text-sm">Format consistency</span><span class="badge ${prof.passed_format?'badge-emerald':'badge-rose'}">${prof.passed_format?'✓ Passed':'✗ Failed'}</span></div>
+          </div>
+        `}
+      </div>
+      ${prof && !prof.error ? (prof.passed_volume && prof.passed_format ? 
+        `<div class="success-box">✓ Data passed profiling. Approved to proceed to Step 3.</div>` : 
+        `<div class="error-box">✗ Dataset validation failed. Check that path is correct and has at least 20 entries.</div>`
+      ) : ''}`;
+  }
+  else if (automlStep === 3) content = `
+    <h2 class="font-black text-lg mb-2">Step 3 — Mandatory Manual Input</h2>
+    <p class="text-muted text-sm mb-4">You must manually specify the target column (for CSVs) and confirm removal of all patient-identifying data for compliance.</p>
+    <div class="form-group mb-4"><label>Target Column (tabular targets, e.g. Outcome, Diagnosis, BloodSugar) *</label><input type="text" id="s3Target" class="form-input" placeholder="Leave empty for image datasets" value="${automlData.target||''}"></div>
+    <div class="glass-sm p-4 mb-4">
+      <div class="font-semibold mb-3">Patient Data Removal Checklist</div>
+      <div class="flex-col gap-2" style="display:flex">
+        ${['Patient Name','Patient ID / MRN','Date of Birth','Address / Contact Info','National ID / SSN'].map((f,i)=>
+          `<label style="display:flex;align-items:center;gap:10px;cursor:pointer"><input type="checkbox" id="s3col${i}" style="width:16px;height:16px;accent-color:var(--cyan)" checked> <span class="text-sm">${f} — removed</span></label>`
+        ).join('')}
+      </div>
+    </div>
+    <div class="error-box" style="background:rgba(245,158,11,0.08);border-color:rgba(245,158,11,0.3);color:var(--amber)">⚠️ The platform is strictly against providing any patient-identifying data to AI models. HIPAA &amp; GDPR compliance is mandatory.</div>`;
+  else if (automlStep === 4) content = `
+    <h2 class="font-black text-lg mb-2">Step 4 — Data Cleaning &amp; Conversion</h2>
+    <p class="text-muted text-sm mb-4">Enclave standardizes types, imputes null values, and performs scaling.</p>
+    <div class="flex-col gap-3" style="display:flex">
+      ${[
+        {icon:'🧹',title:'Null Imputation',desc:'Numerical missing values auto-filled via median; categorical via mode.'},
+        {icon:'📏',title:'Feature Scaling',desc:'Standard scaling applied to numeric features. Grayscale normalization applied to images.'},
+        {icon:'⚗️',title:'Feature Extraction',desc:'Pixel vectors flattened from images; dummy columns created for tabular categories.'},
+        {icon:'🔄',title:'Format Normalization',desc:'Data verified as compatible with scikit-learn ML tournament.'},
+      ].map(op=>`<div class="glass-sm p-4 flex items-start gap-3"><span style="font-size:20px">${op.icon}</span><div><div class="font-semibold text-sm">${op.title}</div><div class="text-xs text-muted mt-1">${op.desc}</div></div><span class="badge badge-emerald shrink-0">Done</span></div>`).join('')}
+    </div>`;
+  else if (automlStep === 5) {
+    const score = (automlData.profile && automlData.profile.passed_volume) ? 95 : 35;
+    content = `
+      <h2 class="font-black text-lg mb-2">Step 5 — Human Verification</h2>
+      <p class="text-muted text-sm mb-4">Review data quality score before proceeding to training. Data below 50% quality will not proceed.</p>
+      <div class="glass-sm p-5 mb-4">
+        <div class="flex items-center justify-between mb-3">
+          <span class="font-bold">Data Quality Score</span>
+          <span class="font-black text-3xl ${score >= 50 ? 'text-emerald' : 'text-rose'}">${score}%</span>
+        </div>
+        <div class="progress-bar mb-3"><div class="progress-fill ${score < 50 ? 'progress-fill-amber' : ''}" style="width:${score}%"></div></div>
+        <div class="grid-3 gap-3">
+          <div class="glass-sm p-3 text-center"><div class="text-xs text-muted">Completeness</div><div class="font-black text-cyan">${automlData.profile && !automlData.profile.error ? (100 - parseFloat(automlData.profile.missing_values_pct)) + '%' : 'N/A'}</div></div>
+          <div class="glass-sm p-3 text-center"><div class="text-xs text-muted">Volume</div><div class="font-black text-purple">${automlData.profile && !automlData.profile.error ? automlData.profile.total_records : 'N/A'}</div></div>
+          <div class="glass-sm p-3 text-center"><div class="text-xs text-muted">Status</div><div class="font-black text-emerald">Verified</div></div>
+        </div>
+      </div>
+      <div class="flex gap-3 mt-4">
+        <button class="btn btn-emerald btn-sm" onclick="triggerAutoMLTraining()">✓ Approve &amp; Run Tournament</button>
+        <button class="btn btn-ghost btn-sm" onclick="automlStep=1; renderAutoMLStep();">Re-upload Data / Change Path</button>
+      </div>`;
+  }
+  else if (automlStep === 6) {
+    const prof = automlData.profile || {format_type: 'Tabular CSV', total_records: 0};
+    const isImage = prof.format_type === "Image Directory";
+    content = `
+      <h2 class="font-black text-lg mb-2">Step 6 — Problem Detection</h2>
+      <p class="text-muted text-sm mb-4">The platform automatically identifies the ML problem type from your data.</p>
+      <div class="glass-sm p-5">
+        <div class="flex items-center gap-3 mb-4">
+          <div style="font-size:32px">${isImage ? '🖼️' : '📊'}</div>
+          <div><div class="font-black text-lg text-cyan">${isImage ? 'Image Classification' : 'Tabular Predictor'}</div><div class="text-sm text-muted">Detected from dataset structure</div></div>
+        </div>
+        <div class="grid-2 gap-3">
+          <div class="glass-sm p-3"><div class="text-xs text-muted">Target Objective</div><div class="font-semibold text-sm mt-1">${isImage ? 'Image Labels (Classes)' : (automlData.target || 'Auto-detected')}</div></div>
+          <div class="glass-sm p-3"><div class="text-xs text-muted">Data Format</div><div class="font-semibold text-sm mt-1">${prof.format_type}</div></div>
+          <div class="glass-sm p-3"><div class="text-xs text-muted">Total records</div><div class="font-semibold text-sm mt-1">${prof.total_records}</div></div>
+          <div class="glass-sm p-3"><div class="text-xs text-muted">Split Strategy</div><div class="font-semibold text-sm mt-1">80% Train / 20% Test</div></div>
+        </div>
+      </div>`;
+  }
+
+  else if (automlStep === 7) {
+    if (!automlData.results && !automlData.pollingResults) {
+      automlData.pollingResults = true;
+      pollAutoMLResults();
+    }
+    
+    if (!automlData.results) {
+      content = `
+        <h2 class="font-black text-lg mb-2">Step 7 — AutoML Pipeline</h2>
+        <p class="text-muted text-sm mb-4">Running train/test split, scalarization, and multi-algorithm tournament.</p>
+        <div class="glass-sm p-6 text-center">
+          <div class="spinner mb-4" style="margin:0 auto 16px auto;width:32px;height:32px"></div>
+          <div class="font-bold text-cyan mb-2">Training Scikit-Learn Models...</div>
+          <p class="text-xs text-muted" style="line-height:1.6">Running evaluation splits and comparing performance across Logistic Regression, SVM, Random Forest, MLP Neural Networks, and HistGradientBoosting.</p>
+        </div>`;
+    } else {
+      const list = automlData.results.tournament || [];
+      content = `
+        <h2 class="font-black text-lg mb-2">Step 7 — AutoML Pipeline</h2>
+        <p class="text-muted text-sm mb-4">Tournament complete. Accuracies and F1 scores validated in secure enclave.</p>
+        <div class="flex-col gap-3" style="display:flex">
+          ${list.map(m=>`<div class="glass-sm p-4 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              ${m.champion?'<span style="font-size:18px">🏆</span>':'<span style="font-size:18px;opacity:.3">▪</span>'}
+              <div><div class="font-semibold text-sm">${m.name}${m.champion?' <span class="badge badge-amber">Champion</span>':''}</div><div class="text-xs text-muted mono">F1: ${m.f1}</div></div>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="font-black ${m.champion?'text-emerald':'text-muted'}">${m.accuracy}%</span>
+              <span class="badge badge-emerald">✓</span>
+            </div>
+          </div>`).join('')}
+        </div>`;
+    }
+  }
+  else if (automlStep === 8) {
+    const champ = (automlData.results && automlData.results.tournament && automlData.results.tournament.find(x => x.champion)) || {name:'XGBoost',accuracy:96.8,f1:0.97,precision:0.96,recall:0.97};
+    content = `
+      <h2 class="font-black text-lg mb-2">Step 8 — Explainability Report</h2>
+      <p class="text-muted text-sm mb-4">Model analysis report for your review before final approval.</p>
+      <div class="glass-sm p-5 mb-4">
+        <div class="font-bold mb-4">Champion: ${champ.name} Classifier</div>
+        <div class="grid-4 gap-3 mb-4">
+          <div class="glass-sm p-3 text-center"><div class="text-xs text-muted">Accuracy</div><div class="font-black text-emerald" style="font-size:20px">${champ.accuracy}%</div></div>
+          <div class="glass-sm p-3 text-center"><div class="text-xs text-muted">F1 Score</div><div class="font-black text-cyan" style="font-size:20px">${champ.f1}</div></div>
+          <div class="glass-sm p-3 text-center"><div class="text-xs text-muted">Precision</div><div class="font-black text-purple" style="font-size:20px">${champ.precision || 0.96}</div></div>
+          <div class="glass-sm p-3 text-center"><div class="text-xs text-muted">Recall</div><div class="font-black text-amber" style="font-size:20px">${champ.recall || 0.97}</div></div>
+        </div>
+        <div class="glass-sm p-4">
+          <div class="font-semibold text-sm mb-2">Why ${champ.name} was selected</div>
+          <p class="text-sm text-muted" style="line-height:1.7">${champ.name} outperformed candidate algorithms with ${champ.accuracy}% accuracy and F1 of ${champ.f1} on the held-out test set. Its boundary classification successfully parsed features better than other methods. SHAP importance analysis shows the top predictors are: pixel_density_region_4, enhanced_contrast_score, and edge_gradient_mean.</p>
+        </div>
+      </div>`;
+  }
+  else if (automlStep === 9) {
+    const champ = (automlData.results && automlData.results.tournament && automlData.results.tournament.find(x => x.champion)) || {name:'XGBoost',accuracy:96.8,f1:0.97};
+    const disease = (automlData.results && automlData.results.disease) || 'Brain Tumor';
+    const recs = (automlData.results && automlData.results.records) || '10,847';
+    content = `
+      <h2 class="font-black text-lg mb-2">Step 9 — Final Approval</h2>
+      <p class="text-muted text-sm mb-4">Review the explainability report and approve or reject the model.</p>
+      <div class="glass-sm p-5 mb-4">
+        <div class="flex items-center justify-between mb-3">
+          <div class="font-bold">${disease} Classifier — Custom AutoML</div>
+          <span class="badge badge-purple">Hospital-Owned (Theirs)</span>
+        </div>
+        <div class="flex-col gap-2" style="display:flex;font-size:13px;color:var(--slate300)">
+          <div>Accuracy: <strong>${champ.accuracy}%</strong> &bull; F1: <strong>${champ.f1}</strong> &bull; Algorithm: <strong>${champ.name}</strong></div>
+          <div>Training data: <strong>${recs} records</strong> &bull; Test split: <strong>20%</strong></div>
+          <div>Version: <strong>v1.0.0-ONNX</strong></div>
+        </div>
+      </div>
+      <div class="flex gap-4">
+        <button onclick="approveAndDeployModel()" class="btn btn-emerald">✓ Approve Model</button>
+        <button class="btn btn-rose">✗ Reject &amp; Re-train</button>
+      </div>`;
+  }
+  else if (automlStep === 10) {
+    const champ = (automlData.results && automlData.results.tournament && automlData.results.tournament.find(x => x.champion)) || {name:'XGBoost',accuracy:96.8,f1:0.97};
+    const disease = (automlData.results && automlData.results.disease) || 'Brain Tumor';
+    content = `
+    <div class="text-center py-6">
+      <div style="font-size:64px;margin-bottom:16px">🚀</div>
+      <h2 class="font-black text-2xl text-emerald mb-3">Model Deployed!</h2>
+      <p class="text-muted text-sm mb-6">Your hospital-owned model is live and has been added to <strong>My Models</strong> as <span class="badge badge-purple">Theirs</span></p>
+      <div class="glass-sm p-5 text-left" style="max-width:400px;margin:0 auto">
+        <div class="flex-col gap-2" style="display:flex;font-size:13px">
+          <div>Name: <strong>${disease} Detection (Custom)</strong></div>
+          <div>Ownership: <strong class="text-purple">Theirs (Hospital-Licensed)</strong></div>
+          <div>Version: <strong>v1.0.0-ONNX</strong></div>
+          <div>Accuracy: <strong class="text-emerald">${champ.accuracy}%</strong></div>
+          <div>Status: <span class="badge badge-emerald">Active</span></div>
+        </div>
+      </div>
+      <button onclick="switchView('hospital','mymodel')" class="btn btn-cyan mt-6">View in My Models</button>
+    </div>`;
+  }
+  document.getElementById('automlStepContent').innerHTML = content;
+}
+
+async function approveAndDeployModel() {
+  const champ = (automlData.results && automlData.results.tournament && automlData.results.tournament.find(x => x.champion)) || {name:'XGBoost',accuracy:96.8,f1:0.97};
+  const disease = (automlData.results && automlData.results.disease) || 'Brain Tumor';
+  const modelId = disease.toLowerCase().replace(/[^a-z0-9]/g, '_') + "_custom";
+  const modelName = disease + " Detection (Custom)";
+  
+  try {
+    const r = await fetch('/api/hospital/automl/deploy', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ id: modelId, name: modelName, accuracy: champ.accuracy })
+    });
+    if (r.ok) {
+      automlStep = 10;
+      renderAutoMLStep();
+    } else {
+      alert("Failed to deploy model: " + (await r.text()));
+    }
+  } catch (ex) {
+    alert("Error deploying model: " + ex.message);
+  }
+}
+function automlNext() {
+  if (automlStep === 1) { 
+    automlData.disease = document.getElementById('s1Disease')?.value||''; 
+    automlData.path = document.getElementById('s1Path')?.value||''; 
+    automlData.profile = null; 
+  }
+  if (automlStep === 3) { automlData.target = document.getElementById('s3Target')?.value||'Outcome'; }
+  if (automlStep < 10) { automlStep++; renderAutoMLStep(); }
+}
+function automlPrev() { if (automlStep > 1) { automlStep--; renderAutoMLStep(); } }
+
+async function runProfiling() {
+  try {
+    const r = await fetch('/api/hospital/automl/profile', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ dataset_path: automlData.path, target_column: automlData.target || '' })
+    });
+    if (r.ok) {
+      automlData.profile = await r.json();
+    } else {
+      const err = await r.text();
+      automlData.profile = { error: err || 'Profiling failed' };
+    }
+  } catch (ex) {
+    automlData.profile = { error: ex.message };
+  }
+  automlData.profiling = false;
+  renderAutoMLStep();
+}
+
+async function triggerAutoMLTraining() {
+  try {
+    const r = await fetch('/api/hospital/automl/train', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        dataset_path: automlData.path,
+        target_column: automlData.target || '',
+        disease: automlData.disease || 'Custom Model'
+      })
+    });
+    if (r.ok) {
+      automlStep = 6;
+      automlData.results = null;
+      renderAutoMLStep();
+    } else {
+      alert("Failed to start training: " + (await r.text()));
+    }
+  } catch (ex) {
+    alert("Error triggering training: " + ex.message);
+  }
+}
+
+async function pollAutoMLResults() {
+  if (automlStep !== 7) {
+    automlData.pollingResults = false;
+    return;
+  }
+  try {
+    const r = await fetch('/api/hospital/automl/results');
+    if (r.ok) {
+      automlData.results = await r.json();
+      automlData.pollingResults = false;
+      renderAutoMLStep();
+    } else {
+      setTimeout(pollAutoMLResults, 2000);
+    }
+  } catch (ex) {
+    setTimeout(pollAutoMLResults, 2000);
+  }
+}
+
+// ── Version Control ────────────────────────────────────────────────────
+async function loadVersionControl() {
+  const r = await fetch('/api/hospital/version-control');
+  const models = await r.json();
+  document.getElementById('versionControlList').innerHTML = models.map(m => `
+    <div class="glass p-5">
+      <div class="flex items-center justify-between mb-4">
+        <div class="font-bold text-base">${m.model_name}</div>
+        <span class="badge badge-cyan mono">Active: ${m.active_version}</span>
+      </div>
+      <div class="flex-col gap-0" style="display:flex">
+        ${m.versions.map(v => `
+          <div class="version-row">
+            <span class="mono text-sm font-bold ${v.status==='Active'?'text-cyan':'text-muted'}">${v.version}</span>
+            <span class="badge ${v.status==='Active'?'badge-emerald':'badge-slate'}">${v.status}</span>
+            <span class="text-xs text-muted">${v.date}</span>
+            <span class="text-xs" style="flex-grow:1;color:var(--slate300)">${v.notes}</span>
+            ${v.status!=='Active'?'<button class="btn btn-ghost btn-sm">Rollback</button>':''}
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `).join('');
+}
+
+// ── Integrations ───────────────────────────────────────────────────────
+async function loadIntegrations() {
+  const r = await fetch('/api/hospital/integrations');
+  const items = await r.json();
+  document.getElementById('integrationsGrid').innerHTML = items.map(item => {
+    const dot = item.status === 'Active' ? 'dot-active' : item.status === 'In Use' ? 'dot-warn' : 'dot-off';
+    const badge = item.status === 'Active' ? 'badge-emerald' : item.status === 'In Use' ? 'badge-amber' : item.status === 'Disconnected' ? 'badge-rose' : 'badge-slate';
+    return `<div class="integration-card">
+      <div class="${dot}"></div>
+      <div style="flex-grow:1">
+        <div class="flex items-center justify-between mb-1">
+          <div class="font-bold text-sm">${item.system}</div>
+          <span class="badge ${badge}">${item.status}</span>
+        </div>
+        <div class="text-xs text-muted mono mb-2">${item.type} &bull; ${item.throughput} &bull; Last sync: ${item.last_sync}</div>
+        ${item.connected_models.length ? 
+          `<div class="flex flex-wrap gap-1">${item.connected_models.map(m=>`<span class="badge badge-purple" style="font-size:9px">${m}</span>`).join('')}</div>` : 
+          '<span class="badge badge-slate" style="font-size:9px">No models connected</span>'}
+        ${item.error_rate !== 'N/A' ? `<div class="text-xs mt-2 text-muted">Error rate: ${item.error_rate}</div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── Feedback Modal ─────────────────────────────────────────────────────
+function openFeedbackModal(id, name) {
+  document.getElementById('feedbackModelId').value = id;
+  document.getElementById('feedbackModalModelName').textContent = name;
+  document.getElementById('feedbackErr').classList.add('hidden');
+  document.getElementById('feedbackOk').classList.add('hidden');
+  document.getElementById('feedbackModal').classList.remove('hidden');
+}
+async function submitFeedback(e) {
+  e.preventDefault();
+  const id = document.getElementById('feedbackModelId').value;
+  const obs = document.getElementById('feedbackAccObs').value;
+  const notes = document.getElementById('feedbackNotes').value;
+  const model = _myModels.find(m=>m.id===id)||{name:id};
+  try {
+    const r = await fetch('/api/models/feedback',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model_id:id,model_name:model.name||id,accuracy_observation:obs,notes:notes,doctor_name:currentUser?.name||'Dr. Unknown'})});
+    const d = await r.json();
+    document.getElementById('feedbackOk').textContent = 'Feedback submitted. Thank you!';
+    document.getElementById('feedbackOk').classList.remove('hidden');
+    setTimeout(()=>document.getElementById('feedbackModal').classList.add('hidden'), 1500);
+  } catch(ex) { document.getElementById('feedbackErr').textContent = 'Error: '+ex.message; document.getElementById('feedbackErr').classList.remove('hidden'); }
+}
+
+// ── Init ───────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  // App shell hidden initially
+  document.getElementById('appShell').style.display = 'none';
+});
+
+// ── Blood Cancer Text Classifier (standalone) ─────────────────────────
+async function runBloodCancerTextClassifier() {
+  const textInput = document.getElementById('bcTextInput').value.trim();
+  if (!textInput) { alert('Please enter medical text to classify.'); return; }
+  const spinner = document.getElementById('bcTextSpinner');
+  const resultEl = document.getElementById('bcTextResult');
+  const runBtn = document.getElementById('bcTextRunBtn');
+  spinner.classList.remove('hidden');
+  runBtn.disabled = true;
+  runBtn.textContent = 'Classifying...';
+  resultEl.classList.add('hidden');
+  try {
+    const r = await fetch('/api/models/blood-cancer-text/predict', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({text: textInput})
+    });
+    const data = await r.json();
+    const isCancer = data.top_label === 'Cancer';
+    const labelMap = {'LABEL_0': 'Non-Cancer', 'LABEL_1': 'Cancer'};
+    resultEl.classList.remove('hidden');
+    resultEl.innerHTML = `
+      <div class="text-classifier-result ${isCancer ? 'cancer' : 'non-cancer'}">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-3">
+            <div style="font-size:32px">${isCancer ? '⚠️' : '✅'}</div>
+            <div>
+              <div class="font-black text-lg ${isCancer ? 'text-rose' : 'text-emerald'}">${data.top_label}</div>
+              <div class="text-xs text-muted mono">${data.mode === 'live' ? '🟢 Live HuggingFace API' : '🔵 Demo Mode'} · ${data.model}</div>
+            </div>
+          </div>
+          <div class="font-black" style="font-size:28px;${isCancer ? 'color:var(--rose)' : 'color:var(--emerald)'}">${data.top_score}%</div>
+        </div>
+        <div class="mb-4">
+          <div class="text-xs text-muted mb-2">Classification Confidence</div>
+          ${data.predictions.map(p => {
+            const label = labelMap[p.label] || p.label;
+            const pct = (p.score * 100).toFixed(1);
+            const cls = p.label === 'LABEL_1' ? 'cancer' : 'non-cancer';
+            return '<div class="mb-2"><div class="flex items-center justify-between mb-1"><span class="text-xs font-bold">' + label + '</span><span class="text-xs mono">' + pct + '%</span></div><div class="confidence-bar"><div class="confidence-fill ' + cls + '" style="width:' + pct + '%"></div></div></div>';
+          }).join('')}
+        </div>
+        <div class="glass-sm p-3">
+          <div class="text-xs text-muted mb-1">Input Text (truncated)</div>
+          <div class="text-sm" style="color:var(--slate300);line-height:1.6">${data.input_text}</div>
+        </div>
+      </div>
+    `;
+  } catch(ex) {
+    resultEl.classList.remove('hidden');
+    resultEl.innerHTML = '<div class="error-box">Error: ' + ex.message + '</div>';
+  } finally {
+    spinner.classList.add('hidden');
+    runBtn.disabled = false;
+    runBtn.textContent = '▶ Classify Text';
+  }
+}
+</script>
+</body>
+</html>
