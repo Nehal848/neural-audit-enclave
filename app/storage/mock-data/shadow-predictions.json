@@ -1,0 +1,67 @@
+[
+  {
+    "id": "shadow-001",
+    "case_token": "CASE-2291A",
+    "model_id": "pneumonia",
+    "model_name": "Pneumonia Detection",
+    "prediction": "Positive",
+    "confidence": 0.94,
+    "timestamp": "2026-07-16T09:15:00Z",
+    "reviewer_label": null,
+    "reviewer_score": null,
+    "reviewed": false,
+    "visible_to_doctor": false
+  },
+  {
+    "id": "shadow-002",
+    "case_token": "CASE-3847B",
+    "model_id": "pneumonia",
+    "model_name": "Pneumonia Detection",
+    "prediction": "Negative",
+    "confidence": 0.88,
+    "timestamp": "2026-07-16T10:30:00Z",
+    "reviewer_label": "Correct",
+    "reviewer_score": 1,
+    "reviewed": true,
+    "visible_to_doctor": false
+  },
+  {
+    "id": "shadow-003",
+    "case_token": "CASE-1192C",
+    "model_id": "pneumonia",
+    "model_name": "Pneumonia Detection",
+    "prediction": "Positive",
+    "confidence": 0.71,
+    "timestamp": "2026-07-16T11:45:00Z",
+    "reviewer_label": "Incorrect",
+    "reviewer_score": 0,
+    "reviewed": true,
+    "visible_to_doctor": false
+  },
+  {
+    "id": "shadow-004",
+    "case_token": "CASE-5503D",
+    "model_id": "pneumonia",
+    "model_name": "Pneumonia Detection",
+    "prediction": "Positive",
+    "confidence": 0.96,
+    "timestamp": "2026-07-17T08:10:00Z",
+    "reviewer_label": null,
+    "reviewer_score": null,
+    "reviewed": false,
+    "visible_to_doctor": false
+  },
+  {
+    "id": "shadow-005",
+    "case_token": "CASE-7814E",
+    "model_id": "pneumonia",
+    "model_name": "Pneumonia Detection",
+    "prediction": "Negative",
+    "confidence": 0.91,
+    "timestamp": "2026-07-17T09:00:00Z",
+    "reviewer_label": null,
+    "reviewer_score": null,
+    "reviewed": false,
+    "visible_to_doctor": false
+  }
+]

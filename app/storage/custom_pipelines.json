@@ -1,46 +1,169 @@
 [
-    {
-        "id": "cardio_arrest_predictor",
-        "name": "Cardio Arrest Predictor",
-        "type": "Custom AutoML",
-        "modalities": [
-            "Tabular/CSV Submodel",
-            "Text/PDF Submodel"
-        ],
-        "target": "CardiacScore",
-        "threshold": 0.65
-    },
-    {
-        "id": "cardio_arrest_predictor",
-        "name": "Cardio Arrest Predictor",
-        "type": "Custom AutoML",
-        "modalities": [
-            "Tabular/CSV Submodel",
-            "Text/PDF Submodel"
-        ],
-        "target": "CardiacScore",
-        "threshold": 0.65
-    },
-    {
-        "id": "cardio_arrest_predictor",
-        "name": "Cardio Arrest Predictor",
-        "type": "Custom AutoML",
-        "modalities": [
-            "Tabular/CSV Submodel",
-            "Text/PDF Submodel"
-        ],
-        "target": "CardiacScore",
-        "threshold": 0.65
-    },
-    {
-        "id": "stroke_risk_predictor",
-        "name": "Stroke Risk Predictor",
-        "type": "Custom AutoML",
-        "modalities": [
-            "Tabular/CSV Submodel",
-            "Text/PDF Submodel"
-        ],
-        "target": "StrokeScore",
-        "threshold": 0.65
-    }
+  {
+    "id": "cardio_arrest_predictor",
+    "name": "Cardio Arrest Predictor",
+    "type": "Custom AutoML",
+    "modalities": [
+      "Tabular/CSV Submodel",
+      "Text/PDF Submodel"
+    ],
+    "target": "CardiacScore",
+    "threshold": 0.65
+  },
+  {
+    "id": "cardio_arrest_predictor",
+    "name": "Cardio Arrest Predictor",
+    "type": "Custom AutoML",
+    "modalities": [
+      "Tabular/CSV Submodel",
+      "Text/PDF Submodel"
+    ],
+    "target": "CardiacScore",
+    "threshold": 0.65
+  },
+  {
+    "id": "cardio_arrest_predictor",
+    "name": "Cardio Arrest Predictor",
+    "type": "Custom AutoML",
+    "modalities": [
+      "Tabular/CSV Submodel",
+      "Text/PDF Submodel"
+    ],
+    "target": "CardiacScore",
+    "threshold": 0.65
+  },
+  {
+    "id": "stroke_risk_predictor",
+    "name": "Stroke Risk Predictor",
+    "type": "Custom AutoML",
+    "modalities": [
+      "Tabular/CSV Submodel",
+      "Text/PDF Submodel"
+    ],
+    "target": "StrokeScore",
+    "threshold": 0.65
+  },
+  {
+    "id": "heart_disease_test",
+    "name": "Heart Disease Test",
+    "type": "Custom AutoML",
+    "modalities": [
+      "Tabular/CSV Submodel",
+      "Text/PDF Submodel"
+    ],
+    "target": "HeartDisease",
+    "threshold": 0.65
+  },
+  {
+    "id": "heart_disease_test",
+    "name": "Heart Disease Test",
+    "type": "Custom AutoML",
+    "modalities": [
+      "Tabular/CSV Submodel",
+      "Text/PDF Submodel"
+    ],
+    "target": "HeartDisease",
+    "threshold": 0.65
+  },
+  {
+    "id": "testpipeline_1784136482",
+    "name": "TestPipeline_1784136482",
+    "type": "Custom AutoML",
+    "modalities": [
+      "Tabular/CSV Submodel",
+      "Text/PDF Submodel"
+    ],
+    "target": "Outcome",
+    "threshold": 0.65
+  },
+  {
+    "id": "373cbfe4-f4d3-43c7-b359-562021ce34cc",
+    "name": "Diabetes",
+    "accuracy": 100.0,
+    "version": "v1.0.0",
+    "ownership": "Theirs",
+    "status": "Active",
+    "deployed_at": "2026-07-17T21:21:49.669751+00:00",
+    "data_type": "tabular"
+  },
+  {
+    "id": "6b292224-ac1e-471d-892e-27fce98c3996",
+    "name": "Cardiac Risk AI v1.0",
+    "accuracy": 100.0,
+    "version": "v1.0.0",
+    "ownership": "Theirs",
+    "status": "Active",
+    "deployed_at": "2026-07-17T22:36:37.763876+00:00",
+    "data_type": "tabular"
+  },
+  {
+    "id": "90a0223a-a60f-4d40-85ef-707a982202ec",
+    "name": "Cardiac Risk AI v1.0",
+    "accuracy": 100.0,
+    "version": "v1.0.0",
+    "ownership": "Theirs",
+    "status": "Active",
+    "deployed_at": "2026-07-17T22:40:36.312984+00:00",
+    "data_type": "tabular"
+  },
+  {
+    "id": "0517cadb-7715-4345-8adb-f3cb095c10d4",
+    "name": "Cardiac Risk AI v1.0",
+    "accuracy": 100.0,
+    "version": "v1.0.0",
+    "ownership": "Theirs",
+    "status": "Active",
+    "deployed_at": "2026-07-17T22:57:56.059201+00:00",
+    "data_type": "tabular"
+  },
+  {
+    "id": "b4ebfa1b-bc72-4322-8846-fbdd91240a4c",
+    "name": "Cardiac Risk AI v1.0",
+    "accuracy": 100.0,
+    "version": "v1.0.0",
+    "ownership": "Theirs",
+    "status": "Active",
+    "deployed_at": "2026-07-18T00:23:23.445485+00:00",
+    "data_type": "tabular"
+  },
+  {
+    "id": "28c71a0a-648a-4943-a668-09a994f0a68a",
+    "name": "Cardiac Risk AI v1.0",
+    "accuracy": 100.0,
+    "version": "v1.0.0",
+    "ownership": "Theirs",
+    "status": "Active",
+    "deployed_at": "2026-07-18T00:31:19.637924+00:00",
+    "data_type": "tabular"
+  },
+  {
+    "id": "9c4174fc-7094-4e48-9de0-5a3f1e211020",
+    "name": "breast cancer",
+    "accuracy": 96.49,
+    "version": "v1.0.0",
+    "ownership": "Theirs",
+    "status": "Active",
+    "deployed_at": "2026-07-18T05:37:40.265949+00:00",
+    "data_type": "tabular"
+  },
+  {
+    "id": "2b90db00-2f16-4333-bfe3-5d75f8670c62",
+    "name": "breast cancer",
+    "accuracy": 97.37,
+    "version": "v1.0.0",
+    "ownership": "Theirs",
+    "status": "Active",
+    "deployed_at": "2026-07-18T05:38:48.697109+00:00",
+    "data_type": "tabular"
+  },
+  {
+    "id": "20915a3c-73fc-4b0a-8bd1-230126999c80",
+    "name": "breast cancer",
+    "accuracy": 96.49,
+    "version": "v1.0.0",
+    "ownership": "Theirs",
+    "status": "Active",
+    "deployed_at": "2026-07-18T05:48:35.994839+00:00",
+    "data_type": "tabular"
+  }
 ]

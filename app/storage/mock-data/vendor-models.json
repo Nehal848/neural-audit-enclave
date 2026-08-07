@@ -1,0 +1,50 @@
+[
+  {
+    "id": "pneumoscan_v2",
+    "name": "PneumoScan",
+    "vendor": "PneumoScan Diagnostics Inc.",
+    "version": "v2.0",
+    "indication": "Pneumonia detection",
+    "population": { "min_age": 18, "max_age": 99, "notes": "Adult patients only" },
+    "input_format": ["DICOM", "Image"],
+    "modality": ["Chest X-Ray"],
+    "view": ["PA", "AP"],
+    "last_verified": "2026-06-01",
+    "scope_gate_mode": "block",
+    "description": "Detects consolidation patterns consistent with community-acquired pneumonia from chest radiographs.",
+    "accuracy": 97.2,
+    "price": "$1,499"
+  },
+  {
+    "id": "tumortriage_v3",
+    "name": "TumorTriage",
+    "vendor": "ClinicalAI Labs",
+    "version": "v3.0",
+    "indication": "Brain tumor classification (glioma, meningioma, pituitary)",
+    "population": { "min_age": 16, "max_age": 99, "notes": "Adolescent and adult patients" },
+    "input_format": ["DICOM", "Image"],
+    "modality": ["MRI"],
+    "view": ["Axial", "Coronal", "Sagittal"],
+    "last_verified": "2026-05-15",
+    "scope_gate_mode": "block",
+    "description": "Classifies brain tumors from MRI scans with pixel-level attention heatmaps.",
+    "accuracy": 97.8,
+    "price": "$2,499"
+  },
+  {
+    "id": "diabetescare_v1",
+    "name": "DiabetesCare",
+    "vendor": "MetaboAI Corp.",
+    "version": "v1.5",
+    "indication": "Type-2 diabetes risk prediction",
+    "population": { "min_age": 18, "max_age": 99, "notes": "Adult patients only" },
+    "input_format": ["Tabular", "Text"],
+    "modality": ["Lab Values", "EHR Notes"],
+    "view": [],
+    "last_verified": "2026-04-20",
+    "scope_gate_mode": "block",
+    "description": "Predicts diabetes onset risk from clinical lab markers and patient demographics.",
+    "accuracy": 94.5,
+    "price": "$1,299"
+  }
+]

@@ -1,8 +1,7 @@
 """
 Neural Enclave Core Infrastructure Package
-Handles secure audit logging, data parsing, and cryptographic boundary validation.
+Handles secure audit logging and AutoML pipeline management.
 """
 from core.auditor import EnclaveAuditor
-from core.parser import ClinicalDataParser
 
-__all__ = ["EnclaveAuditor", "ClinicalDataParser"]
+__all__ = ["EnclaveAuditor"]
