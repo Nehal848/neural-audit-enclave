@@ -531,9 +531,7 @@ export default function ModelsPage() {
 
               {/* Table Body */}
               <div className="flex-1">
-                {[
-                  { name: 'Lung Cancer Detection', sub: 'CT Scan Analysis', icon: Activity, color: 'text-blue-500', bg: 'bg-blue-50', border: 'border-blue-100', disease: 'Oncology', type: 'CNN', ver: 'v3.0.1', acc: '96.2%', trend: '1.8%', status: 'Active', state: 'success', time: '2 Days Ago', date: '12 Aug 2025', active: true },
-                {apiModels.map((m: any, i: number) => {
+                {apiModels && apiModels.map((m: any, i: number) => {
                   const icon = (m.name.includes("Brain") || m.name.includes("Tumor") || m.name.includes("Cancer")) ? Brain : (m.name.includes("Pneumonia") ? Activity : (m.name.includes("Diabetes") ? Droplet : (m.name.includes("Heart") ? Heart : Box)));
                   const IconComp = icon;
                   const isOurs = m.ownership === "Ours";
@@ -581,7 +579,7 @@ export default function ModelsPage() {
                       </button>
                     </div>
                   </div>
-                ))}
+                ); })}
               </div>
 
               {/* Pagination */}

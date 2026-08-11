@@ -1,6 +1,6 @@
 "use client"
 
-import React from "react"
+import React, { useState, useEffect } from "react"
 import HospitalLayout from "@/components/hospital-layout"
 import { 
   Users, UserPlus, Clock, FileText, Search, ChevronDown, Calendar, Filter, 
@@ -9,6 +9,22 @@ import {
 } from "lucide-react"
 
 export default function PatientsPage() {
+  const [patients, setPatients] = useState<any[]>([])
+  const [selectedPatient, setSelectedPatient] = useState<any>(null)
+
+  useEffect(() => {
+    fetch("/api/patients")
+      .then(res => res.json())
+      .then(data => {
+        const patientList = Array.isArray(data) ? data : (data.patients || []);
+        setPatients(patientList)
+        if (patientList.length > 0) {
+          setSelectedPatient(patientList[0])
+        }
+      })
+      .catch(console.error)
+  }, [])
+
   return (
     <HospitalLayout 
       title="Patients" 
@@ -106,16 +122,22 @@ export default function PatientsPage() {
 
               {/* Table List */}
               <div className="flex-1 space-y-2">
-                {[
-                  { name: 'Priya Mehta', id: 'MRN-78291', age: '58 Yrs', gender: 'Female', phone: '+91 98765 43210', date: '19 Aug 2025', time: '10:24 AM', img: 'https://i.pravatar.cc/150?u=priya', badge: '+2', active: true },
-                  { name: 'Ramesh Verma', id: 'MRN-78290', age: '62 Yrs', gender: 'Male', phone: '+91 91234 56789', date: '19 Aug 2025', time: '09:11 AM', img: 'https://i.pravatar.cc/150?u=ramesh', badge: '+1' },
-                  { name: 'Alisha Khan', id: 'MRN-78289', age: '47 Yrs', gender: 'Female', phone: '+91 99876 54321', date: '19 Aug 2025', time: '08:35 AM', img: 'https://i.pravatar.cc/150?u=alisha', badge: '+3' },
-                  { name: 'Arjun Patel', id: 'MRN-78288', age: '54 Yrs', gender: 'Male', phone: '+91 87654 32109', date: '19 Aug 2025', time: '08:21 AM', img: 'https://i.pravatar.cc/150?u=arjun', badge: '+2' },
-                  { name: 'Neha Singh', id: 'MRN-78287', age: '39 Yrs', gender: 'Female', phone: '+91 76543 21098', date: '19 Aug 2025', time: '08:06 AM', img: 'https://i.pravatar.cc/150?u=neha', badge: '+1' },
-                  { name: 'Sanjay Rao', id: 'MRN-78286', age: '66 Yrs', gender: 'Male', phone: '+91 65432 10987', date: '18 Aug 2025', time: '07:48 PM', img: 'https://i.pravatar.cc/150?u=sanjay', badge: '+2' },
-                  { name: 'Meera Iyer', id: 'MRN-78285', age: '44 Yrs', gender: 'Female', phone: '+91 54321 09876', date: '18 Aug 2025', time: '06:32 PM', img: 'https://i.pravatar.cc/150?u=meera', badge: '+1' },
-                ].map((p, i) => (
-                  <div key={i} className={`grid grid-cols-12 items-center px-2 py-3 rounded-xl transition-colors ${p.active ? 'bg-blue-50/50 shadow-[0_0_0_1px_rgba(37,99,235,0.1)]' : 'hover:bg-slate-50'}`}>
+                {patients.map((pt: any, i: number) => {
+                  const p = {
+                    name: pt.name || pt.id,
+                    id: pt.id,
+                    age: pt.age ? `${pt.age} Yrs` : 'N/A',
+                    gender: pt.gender || 'Unknown',
+                    phone: pt.contact || '+91 00000 00000',
+                    date: 'Recent',
+                    time: '--:--',
+                    img: `https://i.pravatar.cc/150?u=${pt.id}`,
+                    badge: '+1',
+                    active: selectedPatient?.id === pt.id
+                  };
+                  return (
+
+                  <div key={i} onClick={() => setSelectedPatient(pt)} className={`cursor-pointer grid grid-cols-12 items-center px-2 py-3 rounded-xl transition-colors ${p.active ? 'bg-blue-50/50 shadow-[0_0_0_1px_rgba(37,99,235,0.1)]' : 'hover:bg-slate-50'}`}>
                     <div className="col-span-3 flex items-center gap-3">
                       {p.active ? (
                         <div className="w-4 h-4 rounded bg-blue-600 flex items-center justify-center text-white shrink-0">
@@ -153,7 +175,7 @@ export default function PatientsPage() {
                       </button>
                     </div>
                   </div>
-                ))}
+                ); })}
               </div>
 
               {/* Pagination */}
@@ -253,21 +275,22 @@ export default function PatientsPage() {
 
           {/* ── RIGHT COLUMN ────────────────────────────────────────────────── */}
           <div className="col-span-4 bg-white rounded-3xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-slate-100 p-6 flex flex-col relative overflow-y-auto max-h-[85vh]">
+            {selectedPatient && (<>
             
             {/* Header */}
             <div className="flex justify-between items-start mb-6">
               <div className="flex gap-4">
-                <img src="https://i.pravatar.cc/150?u=priya" alt="Priya" className="w-14 h-14 rounded-full border border-slate-200 object-cover" />
+                <img src={`https://i.pravatar.cc/150?u=${selectedPatient.id}`} alt="Patient" className="w-14 h-14 rounded-full border border-slate-200 object-cover" />
                 <div className="pt-1">
                   <div className="flex items-center gap-2 mb-1">
-                    <h2 className="text-[16px] font-bold text-slate-900 leading-none">Priya Mehta</h2>
+                    <h2 className="text-[16px] font-bold text-slate-900 leading-none">{selectedPatient.name}</h2>
                     <span className="bg-emerald-50 text-emerald-700 border border-emerald-100 px-2 py-0.5 rounded text-[9px] font-bold leading-none">Active</span>
                   </div>
                   <div className="text-[11px] font-medium text-slate-500 mb-1">
-                    MRN-78291 • 58 Yrs • Female
+                    {selectedPatient.id} • {selectedPatient.age} Yrs • {selectedPatient.gender}
                   </div>
                   <div className="text-[11px] font-semibold text-slate-700">
-                    +91 98765 43210
+                    {selectedPatient.contact || "+91 00000 00000"}
                   </div>
                 </div>
               </div>
@@ -290,7 +313,7 @@ export default function PatientsPage() {
             <div className="grid grid-cols-2 gap-y-4 gap-x-4 mb-8">
               <div>
                 <div className="text-[10px] font-medium text-slate-500 mb-1">Date of Birth</div>
-                <div className="text-[12px] font-bold text-slate-800">14 May 1967</div>
+                <div className="text-[12px] font-bold text-slate-800">{selectedPatient.dob || "Unknown"}</div>
               </div>
               <div>
                 <div className="text-[10px] font-medium text-slate-500 mb-1">Blood Group</div>
@@ -298,7 +321,7 @@ export default function PatientsPage() {
               </div>
               <div>
                 <div className="text-[10px] font-medium text-slate-500 mb-1">Last Visit</div>
-                <div className="text-[12px] font-bold text-slate-800 flex flex-wrap gap-1">19 Aug 2025 • <span className="text-slate-500">10:24 AM</span></div>
+                <div className="text-[12px] font-bold text-slate-800 flex flex-wrap gap-1">Recent <span className="text-slate-500"></span></div>
               </div>
               <div>
                 <div className="text-[10px] font-medium text-slate-500 mb-1">Referring Doctor</div>
@@ -306,7 +329,7 @@ export default function PatientsPage() {
               </div>
               <div>
                 <div className="text-[10px] font-medium text-slate-500 mb-1">Primary Diagnosis</div>
-                <div className="text-[12px] font-bold text-slate-800">Pulmonary Nodule</div>
+                <div className="text-[12px] font-bold text-slate-800">{selectedPatient.symptoms || "None"}</div>
               </div>
               <div>
                 <div className="text-[10px] font-medium text-slate-500 mb-1">Allergies</div>
@@ -388,7 +411,7 @@ export default function PatientsPage() {
             <button className="w-full mt-auto py-3.5 rounded-xl border border-slate-200 text-[12px] font-bold text-blue-600 flex items-center justify-center gap-2 hover:bg-slate-50 transition-colors">
               View All Reports & Analysis <span>→</span>
             </button>
-
+            </>)}
           </div>
 
         </div>

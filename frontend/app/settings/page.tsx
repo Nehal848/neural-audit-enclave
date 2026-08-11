@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import HospitalLayout from "@/components/hospital-layout"
 import { 
   User, Edit2, Lock, ChevronRight, Clock, Brain, Bell, 
@@ -19,6 +19,14 @@ const ToggleSwitch = ({ active, onClick }: { active: boolean, onClick: () => voi
 )
 
 export default function SettingsPage() {
+  const [integrations, setIntegrations] = useState<any[]>([])
+
+  useEffect(() => {
+    fetch("/api/settings/integrations")
+      .then(res => res.json())
+      .then(data => setIntegrations(data.integrations || []))
+      .catch(console.error)
+  }, [])
   const [toggles, setToggles] = useState({
     aiConfidence: true,
     aiExplanation: true,
@@ -182,23 +190,19 @@ export default function SettingsPage() {
               <h3 className="text-[15px] font-bold text-slate-900">5. Connected Systems</h3>
             </div>
             <div className="grid grid-cols-2 gap-x-8 gap-y-6 pt-2">
-               {[
-                 { name: 'MRI', icon: Target },
-                 { name: 'Blood Lab', icon: FlaskConical },
-                 { name: 'CT Scan', icon: Scan },
-                 { name: 'Pathology', icon: Microscope },
-                 { name: 'X-Ray', icon: Bone },
-                 { name: 'ECG', icon: Activity },
-               ].map((s, i) => (
+               {integrations.slice(0,6).map((s: any, i: number) => {
+                 const IconComp = s.system.includes('MRI') ? Target : (s.system.includes('CT') ? Scan : (s.system.includes('X-Ray') ? Bone : (s.system.includes('Lab') ? FlaskConical : (s.system.includes('Pathology') ? Microscope : Activity))));
+                 return (
+
                  <div key={i} className="flex justify-between items-center">
                    <div className="flex items-center gap-3 text-[12px] font-semibold text-slate-700">
-                     <s.icon size={16} strokeWidth={1.5} className="text-slate-600" /> {s.name}
+                     <IconComp size={16} strokeWidth={1.5} className="text-slate-600" /> {s.system}
                    </div>
-                   <div className="flex items-center gap-1.5 text-[10px] font-bold text-emerald-600">
-                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Connected
+                   <div className={`flex items-center gap-1.5 text-[10px] font-bold ${s.status === 'Active' || s.status === 'In Use' ? 'text-emerald-600' : 'text-rose-600'}`}>
+                     <span className={`w-1.5 h-1.5 rounded-full ${s.status === 'Active' || s.status === 'In Use' ? 'bg-emerald-500' : 'bg-rose-500'}`}></span> {s.status}
                    </div>
                  </div>
-               ))}
+               )})}
             </div>
           </div>
 

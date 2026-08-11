@@ -1,26 +1,34 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import HospitalLayout from "@/components/hospital-layout"
 import { 
   Calendar, ChevronDown, Filter, Search, MoreHorizontal, ChevronRight, CheckSquare, Square,
   User, Activity, CheckCircle2, AlertCircle, FileText, Download, ShieldCheck, Crosshair, PenTool, Box,
-  Loader2, Eye, EyeOff
+  Loader2, Eye, EyeOff, ArrowRight
 } from "lucide-react"
 
-const MOCK_PATIENTS = [
-  { name: 'Priya Mehta', id: 'PT-78291', source: 'MRI System', sourceSub: 'Brain MRI', model: 'Brain Tumor Detection', ver: 'v2.1.0', status: 'Analysis Complete', state: 'success', time: '10:24 AM', date: '19 Aug 2025', img: 'https://i.pravatar.cc/150?u=priya', finding: 'abnormal mass in frontal lobe', confidence: '94.2%', evidence: ['hyperintensity on T2', 'midline shift'] },
-  { name: 'Ramesh Verma', id: 'PT-78290', source: 'CT System', sourceSub: 'Chest CT', model: 'Lung Cancer Detection', ver: 'v3.0.1', status: 'Analysis Complete', state: 'success', time: '09:11 AM', date: '19 Aug 2025', img: 'https://i.pravatar.cc/150?u=ramesh', finding: 'pulmonary nodule in right upper lobe', confidence: '92.6%', evidence: ['irregular margins', 'spiculated appearance'] },
-  { name: 'Alisha Khan', id: 'PT-78289', source: 'USG System', sourceSub: 'Thyroid USG', model: 'Thyroid Nodule Classifier', ver: 'v1.4.2', status: 'Analysis Complete', state: 'success', time: '08:35 AM', date: '19 Aug 2025', img: 'https://i.pravatar.cc/150?u=alisha', finding: 'hypoechoic nodule', confidence: '88.5%', evidence: ['microcalcifications', 'taller than wide'] },
-]
-
 export default function AnalysisPage() {
-  const [selectedPatient, setSelectedPatient] = useState(MOCK_PATIENTS[1])
+  const [patients, setPatients] = useState<any[]>([])
+  const [selectedPatient, setSelectedPatient] = useState<any>(null)
+
+  useEffect(() => {
+    fetch("/api/patients")
+      .then(res => res.json())
+      .then(data => {
+        const pts = Array.isArray(data) ? data : (data.patients || []);
+        setPatients(pts);
+        if (pts.length > 0) setSelectedPatient(pts[0]);
+      })
+      .catch(console.error);
+  }, [])
   const [generating, setGenerating] = useState(false)
   const [report, setReport] = useState<any>(null)
   const [showDeid, setShowDeid] = useState(false)
 
   const handleGenerateReport = async () => {
+    if (!selectedPatient) return;
+    
     setGenerating(true)
     try {
       const res = await fetch("/api/analyze/gemini", {
@@ -28,11 +36,11 @@ export default function AnalysisPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           patient_id: selectedPatient.id,
-          finding: selectedPatient.finding,
-          confidence: selectedPatient.confidence,
-          model_name: selectedPatient.model,
-          model_version: selectedPatient.ver,
-          evidence_points: selectedPatient.evidence
+          finding: selectedPatient.symptoms || "Abnormal finding",
+          confidence: "92.6%",
+          model_name: "AutoML Classifier",
+          model_version: "v1.2",
+          evidence_points: [selectedPatient.symptoms || "Observation", "Review required"]
         })
       })
       const data = await res.json()
@@ -81,8 +89,21 @@ export default function AnalysisPage() {
 
               {/* Table Body */}
               <div className="space-y-2 flex-1">
-                {MOCK_PATIENTS.map((row, i) => (
-                  <div key={i} onClick={() => { setSelectedPatient(row); setReport(null); setShowDeid(false) }} className={`grid grid-cols-12 items-center px-2 py-3 rounded-xl transition-colors cursor-pointer ${selectedPatient.id === row.id ? 'bg-blue-50/50 shadow-[0_0_0_1px_rgba(59,130,246,0.1)]' : 'hover:bg-slate-50 border border-transparent'}`}>
+                {patients.map((pt: any, i: number) => {
+                  const row = {
+                    id: pt.id,
+                    name: pt.name || pt.id,
+                    img: `https://i.pravatar.cc/150?u=${pt.id}`,
+                    source: "EHR System",
+                    sourceSub: pt.gender ? `${pt.gender}, ${pt.age} yrs` : "Unknown",
+                    model: "Diagnostic AI",
+                    ver: "v1.2",
+                    state: "success",
+                    status: "Ready"
+                  };
+                  return (
+
+                  <div key={i} onClick={() => { setSelectedPatient(row); setReport(null); setShowDeid(false) }} className={`grid grid-cols-12 items-center px-2 py-3 rounded-xl transition-colors cursor-pointer ${selectedPatient?.id === row.id ? 'bg-blue-50/50 shadow-[0_0_0_1px_rgba(59,130,246,0.1)]' : 'hover:bg-slate-50 border border-transparent'}`}>
                     <div className="col-span-3 flex items-center gap-3">
                       <img src={row.img} alt={row.name} className="w-8 h-8 rounded-full border border-slate-200 shrink-0 object-cover" />
                       <div>
@@ -111,7 +132,7 @@ export default function AnalysisPage() {
                       <span className="text-[11px] font-bold text-blue-600 hover:underline">Select</span>
                     </div>
                   </div>
-                ))}
+                ); })}
               </div>
             </div>
 
@@ -119,7 +140,7 @@ export default function AnalysisPage() {
             <div className="bg-white rounded-3xl p-6 shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-slate-100 relative">
               <div className="flex items-center gap-3 mb-6">
                 <h3 className="text-[16px] font-semibold text-slate-900">Selected Report</h3>
-                <span className="px-2.5 py-1 rounded-md bg-slate-100 text-[10px] font-semibold text-slate-600 border border-slate-200/60 tracking-wide uppercase">Report ID: REP-{selectedPatient.id}</span>
+                <span className="px-2.5 py-1 rounded-md bg-slate-100 text-[10px] font-semibold text-slate-600 border border-slate-200/60 tracking-wide uppercase">Report ID: REP-{selectedPatient?.id}</span>
                 
                 {!report && !generating && (
                   <button onClick={handleGenerateReport} className="ml-auto bg-blue-600 text-white px-4 py-2 rounded-xl text-[12px] font-bold hover:bg-blue-700 transition-colors shadow-sm flex items-center gap-2">
@@ -141,28 +162,28 @@ export default function AnalysisPage() {
               {/* Patient Detail Bar */}
               <div className="flex items-center justify-between bg-white border border-slate-200 rounded-2xl p-4 mb-6">
                 <div className="flex items-center gap-3 border-r border-slate-100 pr-6">
-                  <img src={selectedPatient.img} alt={selectedPatient.name} className="w-10 h-10 rounded-full border border-slate-200 object-cover" />
+                  <img src={`https://i.pravatar.cc/150?u=${selectedPatient?.id}`} alt={selectedPatient?.name || selectedPatient?.id} className="w-10 h-10 rounded-full border border-slate-200 object-cover" />
                   <div>
-                    <div className="text-[14px] font-bold text-slate-900 mb-0.5">{selectedPatient.name}</div>
-                    <div className="text-[11px] font-medium text-slate-500">PID: {selectedPatient.id}</div>
+                    <div className="text-[14px] font-bold text-slate-900 mb-0.5">{selectedPatient?.name || selectedPatient?.id}</div>
+                    <div className="text-[9px] font-medium text-slate-500">PID: {selectedPatient?.id}</div>
                   </div>
                 </div>
                 <div className="px-6 border-r border-slate-100 flex-1">
                   <div className="text-[11px] font-semibold text-slate-500 mb-1">Data Source</div>
                   <div className="flex items-center gap-1.5 text-[12px] font-bold text-slate-900">
-                    <Activity size={14} className="text-blue-500" /> {selectedPatient.source}
+                    <Activity size={14} className="text-blue-500" /> {selectedPatient?.source || "EHR Data"}
                   </div>
                 </div>
                 <div className="px-6 border-r border-slate-100 flex-1">
                   <div className="text-[11px] font-semibold text-slate-500 mb-1">AI Model Run</div>
                   <div className="flex items-center gap-1.5 text-[12px] font-bold text-slate-900">
-                    <Box size={14} className="text-blue-500" /> {selectedPatient.model}
+                    <Box size={14} className="text-blue-500" /> {selectedPatient?.model || "AI Diagnostic Model"}
                   </div>
                 </div>
                 <div className="pl-6 pr-2">
                   <div className="text-[11px] font-semibold text-slate-500 mb-1">Status</div>
                   <div className="flex items-center gap-1.5 text-[12px] font-bold text-blue-700">
-                    <span className="w-1.5 h-1.5 rounded-full bg-blue-600"></span> {report ? "Report Generated" : selectedPatient.status}
+                    <span className="w-1.5 h-1.5 rounded-full bg-blue-600"></span> {report ? "Report Generated" : selectedPatient?.status}
                   </div>
                 </div>
               </div>
@@ -209,7 +230,7 @@ export default function AnalysisPage() {
                           <circle cx="48" cy="48" r="44" stroke="#1e3a8a" strokeWidth="6" fill="none" strokeDasharray="276" strokeDashoffset="20" strokeLinecap="round" />
                         </svg>
                         <div className="relative z-10 flex flex-col items-center justify-center">
-                          <span className="text-[20px] font-bold text-slate-900 leading-none mb-1">{selectedPatient.confidence}</span>
+                          <span className="text-[20px] font-bold text-slate-900 leading-none mb-1">{"92.6%"}</span>
                           <span className="text-[9px] font-medium text-slate-500 text-center leading-tight">Confidence<br/>Score</span>
                         </div>
                       </div>
@@ -228,7 +249,7 @@ export default function AnalysisPage() {
                              <h4 className="text-[13px] font-bold text-slate-900">Key Finding (WHY)</h4>
                            </div>
                            <p className="text-[12px] text-slate-600 leading-relaxed font-medium">
-                             {report.report_sections.why}
+                             {report.report?.why}
                            </p>
                          </div>
                          <div>
@@ -237,7 +258,7 @@ export default function AnalysisPage() {
                              <h4 className="text-[13px] font-bold text-slate-900">AI Reasoning (HOW)</h4>
                            </div>
                            <p className="text-[12px] text-slate-600 leading-relaxed font-medium">
-                             {report.report_sections.how}
+                             {report.report?.how}
                            </p>
                          </div>
                        </>
@@ -256,9 +277,9 @@ export default function AnalysisPage() {
                    <h4 className="text-[13px] font-bold text-slate-900 mb-4">Report Details</h4>
                    <div className="space-y-3">
                      {[
-                       { label: 'Model Type', val: selectedPatient.model },
-                       { label: 'Input Modality', val: selectedPatient.sourceSub },
-                       { label: 'AI Model Version', val: selectedPatient.ver },
+                       { label: 'Model Type', val: selectedPatient?.model },
+                       { label: 'Input Modality', val: selectedPatient?.sourceSub },
+                       { label: 'AI Model Version', val: selectedPatient?.ver },
                        { label: 'Report Generated By', val: report ? `Gemini API (${report.generation_mode})` : 'ELVON Intelligence' },
                        { label: 'De-ID Pipeline', val: report ? 'Active & Verifed' : 'Standby' },
                      ].map((item, i) => (
@@ -285,11 +306,11 @@ export default function AnalysisPage() {
             <div className="bg-white rounded-3xl p-6 shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-slate-100 min-h-[400px]">
               <h3 className="text-[16px] font-semibold text-slate-900 mb-6">Original Data Sources</h3>
               <div className="flex items-center justify-center h-48 bg-slate-100 rounded-2xl border border-slate-200 mb-4 text-slate-400">
-                [ {selectedPatient.sourceSub} viewer mock ]
+                [ {selectedPatient?.sourceSub || "Clinical"} viewer mock ]
               </div>
               <div className="text-[12px] font-bold text-slate-700">Identified Markers:</div>
               <ul className="list-disc pl-5 mt-2 space-y-1">
-                {selectedPatient.evidence.map(ev => (
+                {["Symptom matched", "Requires review"].map(ev => (
                   <li key={ev} className="text-[11px] text-slate-600 font-medium">{ev}</li>
                 ))}
               </ul>

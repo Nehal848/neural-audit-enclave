@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import Link from "next/link"
 import { 
   Search, Bell, Settings, LayoutDashboard, BarChart2, Box, Users, FlaskConical, 
@@ -24,6 +24,14 @@ const sparklineData3 = [{ v: 60 }, { v: 55 }, { v: 58 }, { v: 52 }, { v: 48 }, {
 
 export default function DashboardPage() {
   const [uploadTab, setUploadTab] = useState<"Laboratory" | "Imaging">("Laboratory")
+  const [dashData, setDashData] = useState<any>(null)
+
+  useEffect(() => {
+    fetch("/api/doctor/dashboard")
+      .then(res => res.json())
+      .then(data => setDashData(data))
+      .catch(console.error)
+  }, [])
 
   return (
     <div className="min-h-screen bg-transparent flex font-sans text-slate-900 overflow-hidden">
@@ -152,8 +160,8 @@ export default function DashboardPage() {
                     <Users size={22} strokeWidth={2.5} />
                   </div>
                   <div>
-                    <div className="text-[22px] font-semibold text-slate-900 leading-tight">1,248</div>
-                    <div className="text-[11px] text-slate-500 font-medium">Total Patients</div>
+                    <div className="text-[22px] font-semibold text-slate-900 leading-tight">{dashData ? dashData.alerts.length : "..."}</div>
+                    <div className="text-[11px] text-slate-500 font-medium">Active Alerts</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 mt-2">
@@ -230,7 +238,7 @@ export default function DashboardPage() {
                     <Activity size={22} strokeWidth={2.5} />
                   </div>
                   <div>
-                    <div className="text-[22px] font-semibold text-slate-900 leading-tight">6</div>
+                    <div className="text-[22px] font-semibold text-slate-900 leading-tight">{dashData ? dashData.active_models.length : "..."}</div>
                     <div className="text-[11px] text-slate-500 font-medium">AI Models Active</div>
                   </div>
                 </div>
@@ -331,13 +339,18 @@ export default function DashboardPage() {
                 </div>
 
                 <div className="space-y-4 flex-1 overflow-y-auto pr-2">
-                  {[
-                    { name: 'Priya Mehta', id: 'PT-78291', study: 'CT Abdomen', time: '10:24 AM', status: 'Analysis Complete', state: 'success', img: 'https://i.pravatar.cc/150?u=priya' },
-                    { name: 'Ramesh Verma', id: 'PT-78290', study: 'MRI Brain', time: '09:11 AM', status: 'Report Generated', state: 'success', img: 'https://i.pravatar.cc/150?u=ramesh' },
-                    { name: 'Alisha Khan', id: 'PT-78289', study: 'USG Thyroid', time: '08:35 AM', status: 'Analysis Complete', state: 'success', img: 'https://i.pravatar.cc/150?u=alisha' },
-                    { name: 'Arjun Patel', id: 'PT-78288', study: 'X-Ray Chest', time: '08:21 AM', status: 'In Progress', state: 'warning', img: 'https://i.pravatar.cc/150?u=arjun' },
-                    { name: 'Neha Singh', id: 'PT-78287', study: 'CT Spine', time: '08:06 AM', status: 'Analysis Complete', state: 'success', img: 'https://i.pravatar.cc/150?u=neha' }
-                  ].map((p, i) => (
+                  {dashData && dashData.alerts ? dashData.alerts.map((a: any, i: number) => {
+                    const p = {
+                      name: a.name || a.patient_name || a.patient_id,
+                      id: a.patient_id,
+                      study: a.disease || a.model || 'Unknown',
+                      time: 'Recent',
+                      status: a.severity === 'critical' ? 'Critical Alert' : (a.probability ? a.probability + '% Match' : 'Pending'),
+                      state: (a.severity === 'critical' || a.severity === 'high') ? 'warning' : 'success',
+                      img: `https://i.pravatar.cc/150?u=${a.patient_id}`
+                    };
+                    return (
+
                     <div key={i} className="grid grid-cols-4 items-center px-2 py-1 hover:bg-slate-50 rounded-xl transition-colors">
                       <div className="col-span-1 flex items-center gap-3">
                         <img src={p.img} alt={p.name} className="w-8 h-8 rounded-full bg-slate-200 object-cover" />
@@ -355,7 +368,7 @@ export default function DashboardPage() {
                         </div>
                       </div>
                     </div>
-                  ))}
+                  ); }) : null}
                 </div>
               </div>
 
@@ -432,12 +445,17 @@ export default function DashboardPage() {
                 </button>
               </div>
               <div className="space-y-5">
-                {[
-                  { name: 'Licensed PneumoNet', ver: 'v2.4.1', state: 'Active', icon: FileText, color: 'text-slate-500' },
-                  { name: 'AutoML Champion', ver: 'v1.3.0', state: 'Active', icon: Trophy, color: 'text-indigo-500' },
-                  { name: 'XGBoost Classifier', ver: 'v3.1.0', state: 'Active', icon: Box, color: 'text-emerald-500' },
-                  { name: 'ResNet-50 CNN', ver: 'v2.0.3', state: 'Training', icon: Shield, color: 'text-blue-500', isTraining: true }
-                ].map((m, i) => (
+                {dashData && dashData.active_models ? dashData.active_models.map((am: any, i: number) => {
+                  const m = {
+                    name: am.name || am.id,
+                    ver: am.version || 'v1.0',
+                    state: am.status || 'Active',
+                    icon: Box,
+                    color: 'text-blue-500',
+                    isTraining: am.status === 'Training'
+                  };
+                  return (
+
                   <div key={i} className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="w-9 h-9 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center shrink-0 shadow-sm">
@@ -452,7 +470,7 @@ export default function DashboardPage() {
                       <span className={`w-1.5 h-1.5 rounded-full ${m.isTraining ? 'bg-blue-500' : 'bg-emerald-500'}`}></span> {m.state}
                     </div>
                   </div>
-                ))}
+                ); }) : null}
               </div>
               <button className="w-full mt-6 py-2.5 rounded-xl border border-slate-200 text-[12px] font-semibold text-slate-700 hover:bg-slate-50 transition-colors">
                 Manage Models

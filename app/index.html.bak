@@ -626,26 +626,7 @@ async function handleLogin(role) {
     const endpoint = role === 'doctor' ? '/api/doctor/login' : '/api/hospital/login';
     const payload = role === 'doctor' ? { license_no: id, password: pass } : { reg_no: id, password: pass };
     const r = await apiFetch(endpoint, { method: 'POST', body: JSON.stringify(payload) });
-    if (r.otp_required) {
-      renderOTPStep(r.temp_token, role, id);
-    } else if (r.status === 'success' && r.token) {
-      // Backend returns session directly — set it and navigate
-      SESSION = {
-        role, id: r.user_id, token: r.token,
-        full_name: r.full_name || r.hospital_name || r.user_id, hospital_id: 1
-      };
-      localStorage.setItem('hospital_ai_session', JSON.stringify(SESSION));
-      closeAuth();
-      toast(`Welcome, ${SESSION.full_name}!`, 'success');
-      document.getElementById('sidebar').classList.remove('hidden');
-      document.getElementById('header-actions').innerHTML = `
-        <span class="badge badge-primary">${role.toUpperCase()}</span>
-        <button class="btn btn-ghost btn-sm" onclick="logout()">Sign Out</button>`;
-      document.getElementById('sidebar-user-name').textContent = SESSION.full_name;
-      document.getElementById('sidebar-user-id').textContent = SESSION.id;
-      buildSidebar();
-      navigate(role === 'doctor' ? 'doctor-dash' : 'hosp-dash');
-    }
+    if (r.otp_required) { renderOTPStep(r.temp_token, role, id); }
   } catch(e) { toast(e.message, 'error'); }
 }
 
@@ -659,25 +640,7 @@ async function handleSignup(role) {
     const endpoint = role === 'doctor' ? '/api/doctor/signup' : '/api/hospital/signup';
     const payload = role === 'doctor' ? { full_name: name, license_no: id, password: pass } : { hospital_name: name, reg_no: id, password: pass };
     const r = await apiFetch(endpoint, { method: 'POST', body: JSON.stringify(payload) });
-    if (r.otp_required) {
-      renderOTPStep(r.temp_token, role, id);
-    } else if ((r.status === 'success' || r.status === 'registered') && r.token) {
-      SESSION = {
-        role, id: r.user_id, token: r.token,
-        full_name: name, hospital_id: 1
-      };
-      localStorage.setItem('hospital_ai_session', JSON.stringify(SESSION));
-      closeAuth();
-      toast(`Account created! Welcome, ${name}!`, 'success');
-      document.getElementById('sidebar').classList.remove('hidden');
-      document.getElementById('header-actions').innerHTML = `
-        <span class="badge badge-primary">${role.toUpperCase()}</span>
-        <button class="btn btn-ghost btn-sm" onclick="logout()">Sign Out</button>`;
-      document.getElementById('sidebar-user-name').textContent = SESSION.full_name;
-      document.getElementById('sidebar-user-id').textContent = SESSION.id;
-      buildSidebar();
-      navigate(role === 'doctor' ? 'doctor-dash' : 'hosp-dash');
-    }
+    if (r.otp_required) { renderOTPStep(r.temp_token, role, id); }
   } catch(e) { toast(e.message, 'error'); }
 }
 
@@ -724,7 +687,7 @@ async function renderDoctorDash() {
           <div class="page-sub">Real-time diagnostic alerts, active AI model status, and patient risk overview.</div>
         </div>
         <div class="grid-4 mb-6">
-          <div class="stat-card"><div class="stat-label">Critical Alerts</div><div class="stat-val text-rose">${data.alerts.filter(a=>a.severity==='critical'||a.severity==='high'||a.severity==='Critical'||a.severity==='High').length}</div><div class="stat-sub">Requires immediate clinical attention</div></div>
+          <div class="stat-card"><div class="stat-label">Critical Alerts</div><div class="stat-val text-rose">${data.alerts.filter(a=>a.severity==='Critical'||a.severity==='High').length}</div><div class="stat-sub">Requires immediate clinical attention</div></div>
           <div class="stat-card"><div class="stat-label">Active AI Models</div><div class="stat-val text-primary">${data.active_models.length}</div><div class="stat-sub">Monitoring patient vitals & reports</div></div>
           <div class="stat-card"><div class="stat-label">System Accuracy</div><div class="stat-val text-emerald">94.8%</div><div class="stat-sub">Weighted average across active models</div></div>
           <div class="stat-card"><div class="stat-label">Pending Lab Reports</div><div class="stat-val text-amber">4</div><div class="stat-sub">Awaiting AI screening</div></div>
@@ -736,12 +699,12 @@ async function renderDoctorDash() {
             <div class="card flex justify-between items-center">
               <div>
                 <div class="flex items-center gap-3 mb-1">
-                  <span class="font-bold text-base">${a.name || a.patient_name}</span>
+                  <span class="font-bold text-base">${a.patient_name}</span>
                   ${statusBadge(a.severity)}
-                  <span class="text-xs text-muted mono">Age ${a.age}</span>
+                  <span class="text-xs text-muted mono">${a.timestamp}</span>
                 </div>
-                <div class="text-sm font-medium text-primary mb-1">${a.disease || a.model || 'Unknown'} — ${a.probability ? a.probability+'% probability' : (a.finding || 'See report')}</div>
-                <div class="text-xs text-muted">${a.recommendation || (a.severity === 'critical' || a.severity === 'Critical' ? 'Immediate clinical review required.' : 'Schedule follow-up review.')}</div>
+                <div class="text-sm font-medium text-primary mb-1">${a.model} — ${a.finding}</div>
+                <div class="text-xs text-muted">${a.recommendation}</div>
               </div>
               <button class="btn btn-outline btn-sm" onclick="navigate('analysis')">Analyze Report →</button>
             </div>
@@ -769,17 +732,13 @@ async function renderAnalysis() {
                 <div class="flex justify-between items-start mb-2">
                   <div>
                     <div class="font-bold text-base">${p.name}</div>
-                    <div class="text-xs text-muted mono">${p.id} · Age: ${p.age}</div>
+                    <div class="text-xs text-muted mono">${p.id} · Age: ${p.age} · ${p.gender}</div>
                   </div>
-                  <span class="badge ${p.has_imaging ? 'badge-primary' : 'badge-amber'}">
-                    ${p.has_imaging ? '🖼️ Imaging' : p.has_lab ? '🧪 Lab' : '📋 Notes'}
-                  </span>
+                  ${statusBadge(p.status)}
                 </div>
-                <div class="text-sm text-muted mb-3">${p.symptoms || p.condition || 'No symptoms recorded'}</div>
+                <div class="text-sm text-muted mb-3">${p.condition}</div>
                 <div class="p-3 rounded-lg bg-surface2 mb-4 text-xs font-mono text-muted">
-                  ${p.reports_content?.imaging ? '🖼️ ' + p.reports_content.imaging.slice(0,80) : ''}
-                  ${p.reports_content?.lab ? '🧪 ' + p.reports_content.lab.slice(0,80) : ''}
-                  ${(!p.reports_content?.imaging && !p.reports_content?.lab) ? p.reports_content?.clinical_notes?.slice(0,100) || 'No clinical data on record' : ''}
+                  Last Vitals: BP ${p.vitals?.bp||'120/80'}, HR ${p.vitals?.hr||'72'} bpm, Temp ${p.vitals?.temp||'98.6'}°F
                 </div>
               </div>
               <button class="btn btn-primary w-full" onclick="runGeminiAnalysis('${p.id}', '${p.name}')">⚡ Run 5-Step PHI & Gemini Analysis →</button>
@@ -796,36 +755,16 @@ async function runGeminiAnalysis(pid, name) {
   const el = document.getElementById(`report-out-${pid}`);
   el.innerHTML = `<div class="loading-row"><div class="spinner"></div> Running 5-Step PHI Scanner & Gemini AI Analysis...</div>`;
   try {
-    // Fetch patient data first to derive finding/confidence
-    let patient = null;
-    try { const pts = await apiFetch('/api/patients'); patient = pts.find(p => p.id === pid); } catch(_) {}
-    const symptoms = patient?.symptoms || patient?.condition || 'Clinical symptoms under evaluation';
-    const imaging = patient?.reports_content?.imaging || '';
-    const finding = imaging ? imaging.slice(0, 120) : symptoms.slice(0, 120);
-    const r = await apiFetch('/api/analyze/gemini', {
-      method: 'POST',
-      body: JSON.stringify({
-        patient_id: pid,
-        model_id: 'pneumonia',
-        model_name: 'Clinical AI Diagnostic Engine',
-        model_version: 'v2.1.0',
-        finding: finding,
-        confidence: '87%',
-        evidence_points: [symptoms.slice(0, 80), imaging ? 'Imaging: ' + imaging.slice(0, 60) : ''].filter(Boolean)
-      })
-    });
-    // r.report is { why, how, full_text }
-    const reportText = (typeof r.report === 'string') ? r.report : (r.report?.full_text || r.report?.why || JSON.stringify(r.report));
-    const phiFields = r.phi_fields?.join(', ') || r.phi_stripped?.join(', ') || 'Patient identifiers removed safely.';
+    const r = await apiFetch('/api/analyze/gemini', { method: 'POST', body: JSON.stringify({ patient_id: pid }) });
     el.innerHTML = `
       <div class="card-beige mt-3 fade-in">
         <div class="flex justify-between items-center mb-2">
           <span class="badge badge-emerald">Step 5/5 — De-Identified Output</span>
-          <span class="text-xs text-muted mono">Model: ${r.model?.name || 'Clinical AI'} · ${r.mode || 'fallback'}</span>
+          <span class="text-xs text-muted mono">Model: ${r.model_used}</span>
         </div>
-        <div class="font-bold text-sm mb-1 text-primary">AI Diagnostic Assessment — Case ${r.case_token || pid}</div>
-        <div class="text-xs text-muted mb-3" style="white-space:pre-line;line-height:1.6">${reportText}</div>
-        <div class="text-xs mono text-emerald" style="border-top:1px dashed var(--border-strong);padding-top:8px">🔒 PHI Stripped: ${phiFields}</div>
+        <div class="font-bold text-sm mb-1 text-primary">AI Diagnostic Assessment for Case ${pid}</div>
+        <div class="text-xs text-muted mb-3" style="white-space:pre-line;line-height:1.5">${r.report}</div>
+        <div class="text-xs mono text-emerald" style="border-top:1px dashed var(--border-strong);padding-top:8px">🔒 PHI Stripped: ${r.phi_stripped?.join(', ') || 'Patient Identifiers removed safely.'}</div>
       </div>
     `;
     toast(`Analysis generated for ${name}`, 'success');
@@ -1548,7 +1487,7 @@ async function renderMyModels() {
                   <div><div class="font-bold text-base">${m.name}</div><div class="text-xs text-muted mono">${m.id} · ${m.version}</div></div>
                   ${statusBadge(m.status)}
                 </div>
-                <div class="text-xs text-muted mb-3">Ownership: <strong class="${m.ownership==='Ours'||m.ownership==='Hospital'?'text-emerald':'text-primary'}">${m.ownership}</strong> · ${m.type || m.data_type || 'Classification'}</div>
+                <div class="text-xs text-muted mb-3">Ownership: <strong class="${m.ownership==='Ours'?'text-emerald':'text-primary'}">${m.ownership}</strong> (${m.data_type})</div>
                 <div class="mb-3">${confBar(Math.round(m.accuracy))}</div>
               </div>
               <div class="text-xs text-sub mono pt-2 border-t">Deployed: ${m.deployed_at || 'Pre-installed'}</div>

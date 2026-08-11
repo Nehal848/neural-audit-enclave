@@ -1,6 +1,6 @@
 "use client"
 
-import React from "react"
+import React, { useState, useEffect } from "react"
 import HospitalLayout from "@/components/hospital-layout"
 import { 
   Search, ChevronDown, Calendar, Filter, MoreVertical, Eye, Target, 
@@ -9,6 +9,14 @@ import {
 } from "lucide-react"
 
 export default function LaboratoryPage() {
+  const [labData, setLabData] = useState<any>({ scans: [], systems: [] })
+
+  useEffect(() => {
+    fetch("/api/laboratory/scans")
+      .then(res => res.json())
+      .then(data => setLabData(data))
+      .catch(console.error)
+  }, [])
   return (
     <HospitalLayout 
       title="Laboratory & Imaging" 
@@ -86,18 +94,14 @@ export default function LaboratoryPage() {
 
               {/* Table Body */}
               <div className="flex-1 space-y-1">
-                {[
-                  { name: 'Priya Mehta', id: 'MRN-78291', type: 'MRI', icon: Target, report: 'Brain MRI', detail: 'DICOM • 32 images', date: '18 Jul 2025', time: '10:24 AM', img: 'https://i.pravatar.cc/150?u=priya' },
-                  { name: 'Ramesh Verma', id: 'MRN-78290', type: 'CT-Scan', icon: Scan, report: 'Chest CT Scan', detail: 'DICOM • 156 images', date: '18 Jul 2025', time: '09:58 AM', img: 'https://i.pravatar.cc/150?u=ramesh' },
-                  { name: 'Alisha Khan', id: 'MRN-78289', type: 'X-ray', icon: Bone, report: 'Chest X-Ray', detail: 'DICOM • 2 images', date: '18 Jul 2025', time: '09:35 AM', img: 'https://i.pravatar.cc/150?u=alisha' },
-                  { name: 'Arjun Patel', id: 'MRN-78288', type: 'Blood Report', icon: FlaskConical, report: 'Complete Blood Count', detail: 'PDF • 2 pages', date: '18 Jul 2025', time: '08:47 AM', img: 'https://i.pravatar.cc/150?u=arjun' },
-                  { name: 'Neha Singh', id: 'MRN-78287', type: 'Pathology Report', icon: Microscope, report: 'Liver Function Test', detail: 'PDF • 3 pages', date: '18 Jul 2025', time: '08:22 AM', img: 'https://i.pravatar.cc/150?u=neha' },
-                  { name: 'Sanjay Rao', id: 'MRN-78286', type: 'ECG', icon: Activity, report: '12 Lead ECG', detail: 'PDF • 1 page', date: '18 Jul 2025', time: '07:59 AM', img: 'https://i.pravatar.cc/150?u=sanjay' },
-                  { name: 'Meera Iyer', id: 'MRN-78285', type: 'Blood Report', icon: FlaskConical, report: 'Lipid Profile', detail: 'PDF • 2 pages', date: '18 Jul 2025', time: '07:32 AM', img: 'https://i.pravatar.cc/150?u=meera' },
-                ].map((row, i) => (
+                {(labData.scans || []).map((row: any, i: number) => {
+                  const img = 'https://i.pravatar.cc/150?u=' + row.name.split(' ')[0].lower();
+                  const IconComp = row.type.includes('MRI') ? Target : (row.type.includes('CT') ? Scan : (row.type.includes('X-ray') ? Bone : (row.type.includes('Blood') ? FlaskConical : (row.type.includes('Pathology') ? Microscope : Activity))));
+                  return (
+
                   <div key={i} className="grid grid-cols-12 items-center px-2 py-3 rounded-xl hover:bg-slate-50 transition-colors border-b border-slate-50 last:border-0">
                     <div className="col-span-3 flex items-center gap-3">
-                      <img src={row.img} alt={row.name} className="w-8 h-8 rounded-full border border-slate-200 object-cover shrink-0" />
+                      <img src={img} alt={row.name} className="w-8 h-8 rounded-full border border-slate-200 object-cover shrink-0" />
                       <div>
                         <div className="text-[12px] font-bold text-slate-900 leading-tight mb-0.5">{row.name}</div>
                         <div className="text-[10px] font-medium text-slate-500">{row.id}</div>
@@ -105,7 +109,7 @@ export default function LaboratoryPage() {
                     </div>
                     <div className="col-span-2 flex items-center gap-2">
                        <div className="w-7 h-7 rounded bg-blue-50/50 border border-blue-100 flex items-center justify-center text-blue-600 shrink-0">
-                         <row.icon size={14} />
+                         <IconComp size={14} />
                        </div>
                        <span className="text-[11px] font-bold text-slate-700">{row.type}</span>
                     </div>
@@ -131,7 +135,7 @@ export default function LaboratoryPage() {
                       </button>
                     </div>
                   </div>
-                ))}
+                )})}
               </div>
 
               {/* Pagination */}
@@ -162,23 +166,18 @@ export default function LaboratoryPage() {
               </div>
 
               <div className="space-y-4 mb-6">
-                {[
-                  { name: 'MRI System', icon: Target },
-                  { name: 'CT-Scan System', icon: Scan },
-                  { name: 'X-Ray System', icon: Bone },
-                  { name: 'LIS (Laboratory Info. System)', icon: Database },
-                  { name: 'Pathology System', icon: Microscope },
-                  { name: 'ECG System', icon: Activity },
-                ].map((s, i) => (
+                {(labData.systems || []).map((s: any, i: number) => {
+                  const IconComp = s.system.includes('MRI') ? Target : (s.system.includes('CT') ? Scan : (s.system.includes('X-Ray') ? Bone : (s.system.includes('Lab') ? FlaskConical : (s.system.includes('Pathology') ? Microscope : Activity))));
+                  return (
                   <div key={i} className="flex justify-between items-center text-[11px]">
                     <div className="flex items-center gap-3 font-semibold text-slate-700">
-                       <s.icon size={16} strokeWidth={1.5} className="text-slate-400" /> {s.name}
+                       <IconComp size={16} strokeWidth={1.5} className="text-slate-400" /> {s.system}
                     </div>
                     <div className="flex items-center gap-1.5 font-bold text-emerald-700">
-                      Connected <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_4px_rgba(16,185,129,0.4)]"></span>
+                      {s.status} <span className={`w-1.5 h-1.5 rounded-full ${s.status === 'Active' || s.status === 'In Use' ? 'bg-emerald-500 shadow-[0_0_4px_rgba(16,185,129,0.4)]' : 'bg-rose-500'}`}></span>
                     </div>
                   </div>
-                ))}
+                )})}
               </div>
 
               <div className="flex justify-between items-center text-[9px] font-semibold text-slate-400 pt-4 border-t border-slate-50">

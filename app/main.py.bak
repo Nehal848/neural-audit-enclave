@@ -17,7 +17,7 @@ from typing import Optional, List, Dict, Any
 
 import httpx
 import pandas as pd
-from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Depends, Body
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, RedirectResponse
 from pydantic import BaseModel
@@ -28,27 +28,14 @@ _PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(_PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(_PROJECT_ROOT))
 
-from contextlib import asynccontextmanager
 import config
 from core.auditor import EnclaveAuditor
 from core.automl import job_manager as jm
 from core.automl.job_manager import JobStatus
 
 
-
-
-# ─── Lifespan (startup tasks) ────────────────────────────────────────────────
-@asynccontextmanager
-async def _lifespan(app: FastAPI):
-    EnclaveAuditor.init_db()
-    jm.init_table()
-    config.AUTOML_UPLOAD_ROOT.mkdir(parents=True, exist_ok=True)
-    config.AUTOML_MODEL_ROOT.mkdir(parents=True, exist_ok=True)
-    yield
-
-
 # ─── App init ────────────────────────────────────────────────────────────────
-app = FastAPI(title=config.APP_TITLE, version=config.APP_VERSION, lifespan=_lifespan)
+app = FastAPI(title=config.APP_TITLE, version=config.APP_VERSION)
 
 app.add_middleware(
     CORSMiddleware,
@@ -422,7 +409,7 @@ async def get_doctor_cases():
     return {"cases": DOCTOR_CASES, "total_pending": 2, "avg_turnaround_mins": 14}
 
 @app.post("/api/doctor/cases/{case_id}/review")
-async def submit_doctor_review(case_id: str, p: Dict[Any, Any] = Body(...)):
+async def submit_doctor_review(case_id: str, p: Dict[Any, Any]):
     for c in DOCTOR_CASES:
         if c["id"] == case_id:
             c["status"] = p.get("decision", "Reviewed & Signed Off")
@@ -444,7 +431,13 @@ LAB_IMAGING_SOURCES = [
 ]
 
 
-# (startup tasks moved to _lifespan context manager above)
+# ─── Startup ──────────────────────────────────────────────────────────────────
+@app.on_event("startup")
+async def startup_event():
+    EnclaveAuditor.init_db()
+    jm.init_table()
+    config.AUTOML_UPLOAD_ROOT.mkdir(parents=True, exist_ok=True)
+    config.AUTOML_MODEL_ROOT.mkdir(parents=True, exist_ok=True)
 
 
 # ─── Frontend ─────────────────────────────────────────────────────────────────
@@ -623,28 +616,7 @@ async def get_doctor_dashboard():
     }
 
 
-@app.get("/api/laboratory/scans")
-async def get_laboratory_scans():
-    """Return mock laboratory patient scans and laboratory system status"""
-    return {
-        "scans": [
-            {"id": "MRN-78291", "name": "Priya Mehta", "type": "MRI", "report": "Brain MRI", "detail": "DICOM • 32 images", "date": "18 Jul 2025", "time": "10:24 AM"},
-            {"id": "MRN-78290", "name": "Ramesh Verma", "type": "CT-Scan", "report": "Chest CT Scan", "detail": "DICOM • 156 images", "date": "18 Jul 2025", "time": "09:58 AM"},
-            {"id": "MRN-78289", "name": "Alisha Khan", "type": "X-ray", "report": "Chest X-Ray", "detail": "DICOM • 2 images", "date": "18 Jul 2025", "time": "09:35 AM"},
-            {"id": "MRN-78288", "name": "Arjun Patel", "type": "Blood Report", "report": "Complete Blood Count", "detail": "PDF • 2 pages", "date": "18 Jul 2025", "time": "08:47 AM"},
-            {"id": "MRN-78287", "name": "Neha Singh", "type": "Pathology Report", "report": "Liver Function Test", "detail": "PDF • 3 pages", "date": "18 Jul 2025", "time": "08:22 AM"},
-            {"id": "MRN-78286", "name": "Sanjay Rao", "type": "ECG", "report": "12 Lead ECG", "detail": "PDF • 1 page", "date": "18 Jul 2025", "time": "07:59 AM"},
-            {"id": "MRN-78285", "name": "Meera Iyer", "type": "Blood Report", "report": "Lipid Profile", "detail": "PDF • 2 pages", "date": "18 Jul 2025", "time": "07:32 AM"},
-        ],
-        "systems": [sys for sys in INTEGRATIONS if sys["type"] in ["Imaging", "Laboratory", "Cardiology"]]
-    }
-
-@app.get("/api/settings/integrations")
-async def get_settings_integrations():
-    """Return all integrations"""
-    return {"integrations": INTEGRATIONS}
-
-# ─── Hospital Admin Dashboard ───────────────────────────────────────────────────────
+# ─── Hospital Dashboard ───────────────────────────────────────────────────────
 @app.get("/api/hospital/dashboard")
 async def get_hospital_dashboard():
     in_training = [j for j in jm.list_jobs(1) if j["status"] in (JobStatus.TRAINING, JobStatus.CLEANING, JobStatus.EXPLAINING)]
@@ -673,7 +645,6 @@ async def get_hospital_dashboard():
             {"system": "Blood Lab", "status": "Active",       "last_sync": "1 min ago"},
             {"system": "ECG",       "status": "Disconnected", "last_sync": "2h ago"},
         ],
-        "audit_log": EnclaveAuditor.get_all_logs(),
     }
 
 
@@ -733,7 +704,7 @@ async def get_my_models():
         {"id": "blood_cancer_text","name": "Blood Cancer — Text (BiomedBERT)","type": "Text Classification", "accuracy": 93.6, "version": "v1.0.0", "status": "Active", "ownership": "Ours", "feedback_count": 0, "source": "HuggingFace"},
         {"id": "brain_tumor",      "name": "Brain Tumor Detection",          "type": "Classification",      "accuracy": 97.8, "version": "v2.1.0", "status": "Active", "ownership": "Ours", "feedback_count": 1},
     ]
-    # Add deployed hospital-created AutoML models (ownership = "Hospital")
+    # Add deployed hospital-created AutoML models (ownership = "Theirs")
     from core.automl import job_manager as jm
     custom_data = jm.list_jobs(hospital_id=1)
     custom = []
@@ -748,7 +719,7 @@ async def get_my_models():
                 "accuracy": round(acc, 1), 
                 "version": "v1.0.0", 
                 "status": "Active",
-                "ownership": "Hospital", 
+                "ownership": "Theirs", 
                 "feedback_count": 0
             })
     return prebuilt + custom
@@ -777,19 +748,6 @@ async def submit_model_feedback(p: ModelFeedbackPayload):
 @app.get("/api/models/feedback")
 async def get_model_feedback():
     return model_feedback_store
-
-
-# ─── Enclave Audit Trail ──────────────────────────────────────────────────────
-@app.get("/api/audit/logs")
-async def get_audit_logs():
-    """Return all enclave audit log entries (latest 100)."""
-    return EnclaveAuditor.get_all_logs()
-
-@app.get("/api/audit/stats")
-async def get_audit_stats():
-    """Return aggregate statistics from the enclave audit ledger."""
-    return EnclaveAuditor.get_ledger_stats()
-
 
 
 # ─── Marketplace + Scope Gate ─────────────────────────────────────────────────
@@ -1171,7 +1129,7 @@ async def deploy_automl_model(p: AutoMLDeployPayload):
         custom_data.append({
             "id": p.job_id, "name": p.name,
             "accuracy": round(accuracy_val, 2),
-            "version": "v1.0.0", "ownership": "Hospital",
+            "version": "v1.0.0", "ownership": "Theirs",
             "status": "Active", "deployed_at": _now_iso(),
             "data_type": job.get("data_type", "tabular"),
         })
