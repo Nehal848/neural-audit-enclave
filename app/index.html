@@ -1547,8 +1547,21 @@ async function submitAddPatient(e) {
 
 // ── Lab & Imaging ──────────────────────────────────────────────────────
 async function loadLabImaging() {
-  const r = await fetch('/api/doctor/lab-imaging');
-  const sources = await r.json();
+  let sources;
+  try {
+    const r = await fetch('/api/doctor/lab-imaging');
+    if (!r.ok) throw new Error('Server returned ' + r.status);
+    sources = await r.json();
+  } catch(e) {
+    document.getElementById('labImagingGrid').innerHTML =
+      `<div class="glass p-6 text-center" style="grid-column:1/-1">
+        <div style="font-size:2rem;margin-bottom:8px">⚠️</div>
+        <div class="font-bold text-rose">Failed to load Laboratory &amp; Imaging data</div>
+        <div class="text-xs text-muted mt-2">${e.message}</div>
+        <button class="btn btn-ghost btn-sm mt-4" onclick="loadLabImaging()">Retry</button>
+      </div>`;
+    return;
+  }
   document.getElementById('labImagingGrid').innerHTML = sources.map(s => {
     const dot = s.active ? 'dot-active' : 'dot-off';
     const badge = s.status === 'Connected' ? 'badge-emerald' : s.status === 'Active' ? 'badge-cyan' : s.status === 'Disconnected' ? 'badge-rose' : 'badge-slate';
