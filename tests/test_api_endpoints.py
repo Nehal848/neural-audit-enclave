@@ -18,7 +18,7 @@ def run_all_tests():
     client = TestClient(app)
 
     print("--- 1. Testing Doctor & Hospital Auth ---")
-    r = client.post("/api/doctor/login", json={"license_no": "MED-98765-IN", "password": "doctor"})
+    r = client.post("/api/doctor/login", json={"license_no": "MED-11001-DL", "password": "doctor"})
     assert r.status_code == 200, r.text
     tok = r.json()["token"]
     doc_headers = {"Authorization": f"Bearer {tok}"}
@@ -72,7 +72,7 @@ def run_all_tests():
 
     cfg = client.post(
         f"/api/hospital/automl/job/{job_id}/config",
-        json={"target_column": "outcome", "phi_columns": []},
+        json={"target_column": "outcome", "phi_columns": [], "phi_removed": True},
         headers=hosp_headers
     )
     assert cfg.status_code == 200, cfg.text

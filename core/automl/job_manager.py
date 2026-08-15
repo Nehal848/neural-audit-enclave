@@ -18,6 +18,7 @@ MODEL_ROOT  = config.AUTOML_MODEL_ROOT
 
 # ── Status constants ─────────────────────────────────────────────────────────
 class JobStatus:
+    PENDING              = "PENDING"
     UPLOADED             = "UPLOADED"
     PROFILING            = "PROFILING"
     AWAITING_CONFIG      = "AWAITING_CONFIG"
@@ -146,6 +147,25 @@ def set_config(job_id: str, target_col: str, phi_cols: list[str]):
         )
         c.commit()
 
+
+
+
+def set_quality_score(job_id: str, score: float) -> None:
+    """Store quality score and move job to AWAITING_APPROVAL."""
+    update_status(job_id, JobStatus.AWAITING_APPROVAL, step=5,
+                  quality_score=score)
+
+
+def set_metrics(job_id: str, metrics: dict) -> None:
+    """Store training metrics and move job to EXPLAINING."""
+    update_status(job_id, JobStatus.EXPLAINING, step=8,
+                  metrics=json.dumps(_sanitize_floats(metrics)))
+
+
+def set_report(job_id: str, report: dict) -> None:
+    """Store explainability report and move job to REPORT_READY."""
+    update_status(job_id, JobStatus.REPORT_READY, step=9,
+                  report=json.dumps(_sanitize_floats(report)))
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 

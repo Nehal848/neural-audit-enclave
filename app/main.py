@@ -31,6 +31,19 @@ if str(_PROJECT_ROOT) not in sys.path:
 from contextlib import asynccontextmanager
 import config
 from core.auditor import EnclaveAuditor
+
+# ─── Password hashing (bcrypt) ───────────────────────────────────────────────
+try:
+    import bcrypt as _bcrypt
+    def _hash_pw(pw: str) -> str:
+        return _bcrypt.hashpw(pw.encode(), _bcrypt.gensalt()).decode()
+    def _check_pw(pw: str, hashed: str) -> bool:
+        try: return _bcrypt.checkpw(pw.encode(), hashed.encode())
+        except Exception: return pw == hashed  # fallback for legacy plaintext
+except ImportError:
+    # bcrypt not installed — use plaintext fallback (install with: pip install bcrypt)
+    def _hash_pw(pw: str) -> str: return pw
+    def _check_pw(pw: str, hashed: str) -> bool: return pw == hashed
 from core.automl import job_manager as jm
 from core.automl.job_manager import JobStatus
 
@@ -41,6 +54,7 @@ from core.automl.job_manager import JobStatus
 @asynccontextmanager
 async def _lifespan(app: FastAPI):
     EnclaveAuditor.init_db()
+    _init_persist_db()
     jm.init_table()
     config.AUTOML_UPLOAD_ROOT.mkdir(parents=True, exist_ok=True)
     config.AUTOML_MODEL_ROOT.mkdir(parents=True, exist_ok=True)
@@ -50,9 +64,14 @@ async def _lifespan(app: FastAPI):
 # ─── App init ────────────────────────────────────────────────────────────────
 app = FastAPI(title=config.APP_TITLE, version=config.APP_VERSION, lifespan=_lifespan)
 
+from fastapi.staticfiles import StaticFiles as _SF
+_frontend_dir = Path(__file__).resolve().parent.parent / "frontend"
+if _frontend_dir.exists():
+    app.mount("/images", _SF(directory=str(_frontend_dir), html=False), name="images")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["http://localhost:8000", "http://127.0.0.1:8000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -101,7 +120,7 @@ PHI_REGEX = re.compile(
 )
 
 def _deidentify_payload(finding: str, confidence: str, model_name: str, model_version: str,
-                         evidence_points: list, patient_name: str = "") -> dict:
+                         evidence_points: list, patient_name: str = "") -> tuple:
     """
     Step 4.2/4.3 — strip patient identifiers, build minimum-necessary payload.
     Returns (sanitized_payload, stripped_log).
@@ -190,7 +209,7 @@ def _scope_gate_check(vendor_id: str, patient_age: int, modality: str, input_for
 # ─── In-memory stores (demo — realistic seed data) ───────────────────────────
 otp_store: dict = {}
 
-doctor_registry: list = [
+_SEED_DOCTORS: list = [
     {
         "full_name": "Dr. Sarah Vance",
         "license_no": "MED-98765-IN",
@@ -202,7 +221,7 @@ doctor_registry: list = [
     }
 ]
 
-hospital_registry: list = [
+_SEED_HOSPITALS: list = [
     {
         "hospital_name": "City General Hospital",
         "address": "42 Medical Avenue, Mumbai, MH 400001",
@@ -302,6 +321,195 @@ MOCK_PATIENTS = [
     },
 ]
 
+
+
+# ─── Persistent DB manager (SQLite) ──────────────────────────────────────────
+import sqlite3 as _sqlite3
+import json as _json
+
+_DB_FILE = str(Path(__file__).resolve().parent.parent / "hospital_ecosystem.db")
+
+def _db():
+    conn = _sqlite3.connect(_DB_FILE, timeout=10, check_same_thread=False)
+    conn.row_factory = _sqlite3.Row
+    conn.execute("PRAGMA journal_mode=WAL")
+    return conn
+
+def _init_persist_db():
+    """Create tables and seed defaults if empty."""
+    with _db() as c:
+        try: c.execute("ALTER TABLE doctors ADD COLUMN password TEXT")
+        except: pass
+        try: c.execute("ALTER TABLE hospitals ADD COLUMN password TEXT")
+        except: pass
+        for col in ["has_imaging", "has_lab", "has_notes"]:
+            try: c.execute(f"ALTER TABLE patients ADD COLUMN {col} INTEGER DEFAULT 0")
+            except: pass
+        for col in ["reports", "reports_content"]:
+            try: c.execute(f"ALTER TABLE patients ADD COLUMN {col} TEXT DEFAULT '{{}}'")
+            except: pass
+        c.executescript("""
+            CREATE TABLE IF NOT EXISTS patients (
+                id TEXT PRIMARY KEY,
+                name TEXT, age INTEGER, symptoms TEXT,
+                has_imaging INTEGER DEFAULT 0,
+                has_lab INTEGER DEFAULT 0,
+                has_notes INTEGER DEFAULT 0,
+                reports TEXT DEFAULT '{}',
+                reports_content TEXT DEFAULT '{}'
+            );
+            CREATE TABLE IF NOT EXISTS doctors (
+                license_no TEXT PRIMARY KEY,
+                full_name TEXT, state TEXT, email TEXT,
+                hospital_name TEXT, phone TEXT, password TEXT
+            );
+            CREATE TABLE IF NOT EXISTS hospitals (
+                reg_no TEXT PRIMARY KEY,
+                hospital_name TEXT, address TEXT, admin_name TEXT,
+                admin_email TEXT, email TEXT, phone TEXT, password TEXT, role TEXT
+            );
+            CREATE TABLE IF NOT EXISTS model_feedback (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                model_id TEXT, model_name TEXT, doctor TEXT,
+                accuracy_observation TEXT, notes TEXT, timestamp TEXT
+            );
+        """)
+        # Seed patients
+        if c.execute("SELECT COUNT(*) FROM patients").fetchone()[0] == 0:
+            for p in MOCK_PATIENTS:
+                c.execute("""INSERT OR IGNORE INTO patients 
+                    (id,name,age,symptoms,has_imaging,has_lab,has_notes,reports,reports_content)
+                    VALUES (?,?,?,?,?,?,?,?,?)""",
+                    (p["id"], p["name"], p["age"], p.get("symptoms",""),
+                     int(p.get("has_imaging",False)), int(p.get("has_lab",False)),
+                     int(p.get("has_notes",False)),
+                     _json.dumps(p.get("reports",{})), _json.dumps(p.get("reports_content",{}))))
+        # Seed doctors
+        if c.execute("SELECT COUNT(*) FROM doctors").fetchone()[0] == 0:
+            for d in _SEED_DOCTORS:
+                c.execute("""INSERT OR IGNORE INTO doctors 
+                    (license_no,full_name,state,email,hospital_name,phone,password)
+                    VALUES (?,?,?,?,?,?,?)""",
+                    (d["license_no"], d["full_name"], d.get("state",""), d.get("email",""),
+                     d.get("hospital_name",""), d.get("phone",""), _hash_pw(d["password"])))
+        # Seed hospitals
+        if c.execute("SELECT COUNT(*) FROM hospitals").fetchone()[0] == 0:
+            for h in _SEED_HOSPITALS:
+                c.execute("""INSERT OR IGNORE INTO hospitals 
+                    (reg_no,hospital_name,address,admin_name,admin_email,email,phone,password,role)
+                    VALUES (?,?,?,?,?,?,?,?,?)""",
+                    (h["reg_no"], h["hospital_name"], h.get("address",""),
+                     h.get("admin_name",""), h.get("admin_email",""),
+                     h.get("email",""), h.get("phone",""),
+                     _hash_pw(h["password"]), h.get("role","hospital")))
+        c.commit()
+
+def _get_patients():
+    with _db() as c:
+        rows = c.execute("SELECT * FROM patients").fetchall()
+    res = []
+    for r in rows:
+        dr = dict(r)
+        pid = dr.get("pt_id", dr.get("id"))
+        res.append({
+            "id": pid, "name": dr.get("name"), "age": dr.get("age"), "symptoms": dr.get("symptoms"),
+            "has_imaging": bool(dr.get("has_imaging", 0)), "has_lab": bool(dr.get("has_lab", 0)),
+            "has_notes": bool(dr.get("has_notes", 0)),
+            "reports": _json.loads(dr.get("reports", "{}") or "{}"),
+            "reports_content": _json.loads(dr.get("reports_content", "{}") or "{}")
+        })
+    return res
+
+def _add_patient(p: dict):
+    with _db() as c:
+        try:
+            # Primary key column is id, not pt_id
+            c.execute("""INSERT INTO patients (id,name,age,symptoms,has_imaging,has_lab,has_notes,reports,reports_content)
+                VALUES (?,?,?,?,?,?,?,?,?)""",
+                (p["id"], p["name"], p["age"], p.get("symptoms",""),
+                 int(p.get("has_imaging",False)), int(p.get("has_lab",False)),
+                 int(p.get("has_notes",False)),
+                 _json.dumps(p.get("reports",{})), _json.dumps(p.get("reports_content",{}))))
+        except Exception as _e:
+            import logging as _lg
+            _lg.getLogger(__name__).warning("_add_patient full insert failed: %s", _e)
+            c.execute("""INSERT INTO patients (id,name,age,symptoms)
+                VALUES (?,?,?,?)""", (p["id"], p["name"], p["age"], p.get("symptoms","")))
+        c.commit()
+    return p
+
+def _get_doctors():
+    with _db() as c:
+        rows = c.execute("SELECT * FROM doctors").fetchall()
+    return [{"license_no": r["license_no"], "full_name": dict(r).get("name", dict(r).get("full_name")),
+              "state": dict(r).get("state"), "email": dict(r).get("email"),
+              "hospital_name": dict(r).get("hospital_name"), "phone": dict(r).get("phone"),
+              # password hash kept in internal dict only — NOT exposed in API list responses
+              "_password_hash": r["password"]} for r in rows]
+
+def _add_doctor(d: dict):
+    hashed = _hash_pw(d["password"])
+    with _db() as c:
+        try:
+            c.execute("""INSERT OR IGNORE INTO doctors (license_no,name,state,email,hospital_name,phone,password)
+                VALUES (?,?,?,?,?,?,?)""",
+                (d["license_no"], d["full_name"], d.get("state",""), d.get("email",""),
+                 d.get("hospital_name",""), d.get("phone",""), hashed))
+        except:
+            c.execute("""INSERT OR IGNORE INTO doctors (license_no,full_name,state,email,hospital_name,phone,password)
+                VALUES (?,?,?,?,?,?,?)""",
+                (d["license_no"], d["full_name"], d.get("state",""), d.get("email",""),
+                 d.get("hospital_name",""), d.get("phone",""), hashed))
+        c.commit()
+
+def _get_hospitals():
+    with _db() as c:
+        rows = c.execute("SELECT * FROM hospitals").fetchall()
+    return [{"reg_no": r["reg_no"],
+              "hospital_name": dict(r).get("name", dict(r).get("hospital_name")),
+              "_password_hash": r["password"],  # internal only — not exposed in API responses
+              "role": dict(r).get("role", "hospital")} for r in rows]
+
+def _add_hospital(h: dict):
+    hashed = _hash_pw(h["password"])
+    with _db() as c:
+        try:
+            c.execute("""INSERT OR IGNORE INTO hospitals 
+                (reg_no,name,address,admin_name,admin_email,email,phone,password)
+                VALUES (?,?,?,?,?,?,?,?)""",
+                (h["reg_no"], h["hospital_name"], h.get("address",""),
+                 h.get("admin_name",""), h.get("admin_email",""),
+                 h.get("email",""), h.get("phone",""),
+                 hashed))
+        except:
+            pass # Ignore if schema is different
+        c.commit()
+
+def _get_feedback():
+    with _db() as c:
+        rows = c.execute("SELECT * FROM model_feedback ORDER BY id DESC LIMIT 50").fetchall()
+    return [dict(r) for r in rows]
+
+def _add_feedback(f: dict):
+    with _db() as c:
+        c.execute("""INSERT INTO model_feedback (model_id,model_name,doctor,accuracy_observation,notes,timestamp)
+            VALUES (?,?,?,?,?,?)""",
+            (f["model_id"], f["model_name"], f["doctor"],
+             f["accuracy_observation"], f.get("notes",""), f["timestamp"]))
+        c.commit()
+
+def _get_max_patient_num():
+    with _db() as c:
+        try: rows = c.execute("SELECT pt_id FROM patients").fetchall()
+        except: rows = c.execute("SELECT id FROM patients").fetchall()
+    nums = []
+    for r in rows:
+        val = str(dict(r).get("pt_id", dict(r).get("id")))
+        if val.startswith("PT-") and val.split("-")[1].isdigit():
+            nums.append(int(val.split("-")[1]))
+    return max(nums, default=1000)
+
+
 patient_store: list = list(MOCK_PATIENTS)
 
 model_feedback_store: list = [
@@ -316,32 +524,32 @@ model_feedback_store: list = [
 ]
 
 MARKETPLACE = [
-    {"id": "pneu_v3",   "name": "Pneumonia Detection Pro",  "price": "$1,499", "accuracy": 97.2, "version": "v3.0",
+    {"id": "pneu_v3",   "name": "Pneumonia Detection Pro",  "price": "1,499", "accuracy": 97.2, "version": "v3.0",
      "formats": ["Image","DICOM","Tabular","Text"], "input_types": ["Chest X-Ray","CT Scan","CSV Lab Data"],
      "type": "Classification",
      "description": "Enterprise-grade pneumonia detection with DICOM support and auto-report generation. Trained on 2M+ chest scans across 40 hospital networks.",
      "vendor_id": "pneumoscan_v2"},
-    {"id": "diab_v2",   "name": "Diabetes Risk Predictor",  "price": "$1,299", "accuracy": 94.5, "version": "v2.1",
+    {"id": "diab_v2",   "name": "Diabetes Risk Predictor",  "price": "1,299", "accuracy": 94.5, "version": "v2.1",
      "formats": ["Tabular","Text"], "input_types": ["Lab Values","EHR Notes","CSV"],
      "type": "Classification",
      "description": "Predicts diabetes onset risk using clinical history, lab markers, and patient demographics.",
      "vendor_id": "diabetescare_v1"},
-    {"id": "cance_v4",  "name": "Multi-Cancer Screener",    "price": "$2,999", "accuracy": 98.1, "version": "v4.0",
+    {"id": "cance_v4",  "name": "Multi-Cancer Screener",    "price": "2,999", "accuracy": 98.1, "version": "v4.0",
      "formats": ["Image","DICOM","Text"], "input_types": ["MRI","CT Scan","Pathology Report"],
      "type": "Classification",
      "description": "Screens for multiple cancer types including lung, breast, colon with 98%+ accuracy.",
      "vendor_id": None},
-    {"id": "cardio_v1", "name": "Cardiac Risk Predictor",   "price": "$1,199", "accuracy": 95.3, "version": "v1.0",
+    {"id": "cardio_v1", "name": "Cardiac Risk Predictor",   "price": "1,199", "accuracy": 95.3, "version": "v1.0",
      "formats": ["Tabular","ECG","Text"], "input_types": ["ECG Data","Lab Results","Clinical Notes"],
      "type": "Regression",
      "description": "Predicts 12-month cardiac event risk using ECG waveform patterns and clinical biomarkers.",
      "vendor_id": None},
-    {"id": "tb_v2",     "name": "Tuberculosis Detector",    "price": "$899",   "accuracy": 96.0, "version": "v2.0",
+    {"id": "tb_v2",     "name": "Tuberculosis Detector",    "price": "899",   "accuracy": 96.0, "version": "v2.0",
      "formats": ["Image","DICOM","Tabular"], "input_types": ["Chest X-Ray","CT Scan","Lab Results"],
      "type": "Classification",
      "description": "High-sensitivity TB detection from chest imaging. Supports WHO-compliant reporting.",
      "vendor_id": None},
-    {"id": "brain_v1",  "name": "Brain Tumor Classifier",   "price": "$2,499", "accuracy": 97.8, "version": "v1.5",
+    {"id": "brain_v1",  "name": "Brain Tumor Classifier",   "price": "2,499", "accuracy": 97.8, "version": "v1.5",
      "formats": ["Image","DICOM"], "input_types": ["MRI","CT Scan"],
      "type": "Classification",
      "description": "Classifies glioma, meningioma, and pituitary tumors from MRI scans with pixel-level attention heatmaps.",
@@ -370,6 +578,88 @@ INTEGRATIONS = [
     {"system": "EMR System",         "type": "Records",    "connected_models": ["Diabetes Detection"], "status": "Active",       "last_sync": "4 min ago", "throughput": "1.2 MB/s",  "error_rate": "0.00%"},
     {"system": "CIS (Clinical Info)","type": "Records",    "connected_models": [], "status": "Unconnected","last_sync": "Never",     "throughput": "0 MB/s",    "error_rate": "N/A"},
 ]
+
+
+
+
+# ─── Secure Session Store ─────────────────────────────────────────────────────
+import secrets as _secrets
+from datetime import timedelta as _timedelta
+
+# In-memory session store: { token: { user_id, role, name, created_at } }
+# For production, replace with Redis / DB-backed sessions.
+_session_store: dict = {}
+_SESSION_TTL_HOURS = 24  # tokens expire after 24 hours
+
+def _create_session(user_id: str, role: str, name: str = "") -> str:
+    """Generate a cryptographically secure token and store the session."""
+    token = _secrets.token_hex(32)  # 256-bit random token
+    _session_store[token] = {
+        "user_id": user_id,
+        "role": role,
+        "name": name,
+        "created_at": datetime.now(timezone.utc),
+    }
+    return token
+
+def _get_session(token: str) -> dict | None:
+    """Return session dict if token is valid and not expired, else None."""
+    session = _session_store.get(token)
+    if not session:
+        return None
+    age = datetime.now(timezone.utc) - session["created_at"]
+    if age > _timedelta(hours=_SESSION_TTL_HOURS):
+        del _session_store[token]  # prune expired
+        return None
+    return session
+
+def _revoke_session(token: str) -> None:
+    """Invalidate a token (logout)."""
+    _session_store.pop(token, None)
+
+# Auth dependency — validates token against session store
+from fastapi import Header as _Header
+
+async def _require_auth(authorization: Optional[str] = _Header(None)) -> dict:
+    """
+    Bearer token auth guard.
+    - Validates format
+    - Checks token exists in session store
+    - Checks token not expired
+    Returns the session dict {user_id, role, name} on success.
+    """
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(
+            status_code=401,
+            detail="Authorization required. Please log in first.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    token = authorization.split(" ", 1)[1].strip()
+    if not token or token in ("null", "undefined", ""):
+        raise HTTPException(status_code=401, detail="Invalid session token. Please log in again.")
+
+    session = _get_session(token)
+    if not session:
+        raise HTTPException(
+            status_code=401,
+            detail="Session expired or invalid. Please log in again.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return session
+
+async def _require_hospital_auth(authorization: Optional[str] = _Header(None)) -> dict:
+    """Auth guard that additionally enforces hospital or reviewer role."""
+    session = await _require_auth(authorization)
+    if session.get("role") not in ("hospital", "reviewer", "admin"):
+        raise HTTPException(status_code=403, detail="Hospital admin access required.")
+    return session
+
+async def _require_doctor_auth(authorization: Optional[str] = _Header(None)) -> dict:
+    """Auth guard that additionally enforces doctor role."""
+    session = await _require_auth(authorization)
+    if session.get("role") not in ("doctor", "admin"):
+        raise HTTPException(status_code=403, detail="Doctor access required.")
+    return session
 
 # ─── Doctor Clinical Portal Routes ───────────────────────────────────────────
 DOCTOR_CASES = [
@@ -432,15 +722,15 @@ async def submit_doctor_review(case_id: str, p: Dict[Any, Any] = Body(...)):
 
 # ─── Hospital Admin Command Routes ───────────────────────────────────────────
 LAB_IMAGING_SOURCES = [
-    {"source": "MRI",              "type": "Imaging",    "new_uploads": 8,  "status": "Connected",    "active": True,  "findings": "8 new scans received — 2 flagged for review", "errors": None},
-    {"source": "CT Scan",          "type": "Imaging",    "new_uploads": 9,  "status": "Active",       "active": True,  "findings": "9 new CT studies queued for AI processing", "errors": None},
-    {"source": "X-Ray",            "type": "Imaging",    "new_uploads": 12, "status": "Active",       "active": True,  "findings": "12 chest X-rays uploaded via PACS bridge", "errors": None},
-    {"source": "Blood Report",     "type": "Laboratory", "new_uploads": 6,  "status": "Connected",    "active": True,  "findings": "6 new CBC panels — 1 showing elevated WBC", "errors": None},
-    {"source": "Pathology Report", "type": "Laboratory", "new_uploads": 3,  "status": "Active",       "active": True,  "findings": "3 biopsy reports awaiting AI classification", "errors": None},
-    {"source": "ECG",              "type": "Cardiology", "new_uploads": 0,  "status": "Disconnected", "active": False, "findings": None, "errors": "Device offline — last heartbeat 2h ago"},
-    {"source": "CIS",              "type": "Records",    "new_uploads": 10, "status": "Active",       "active": True,  "findings": "10 clinical info records synced", "errors": None},
-    {"source": "EMR",              "type": "Records",    "new_uploads": 5,  "status": "Active",       "active": True,  "findings": "5 EMR entries linked to active patients", "errors": None},
-    {"source": "EHR",              "type": "Records",    "new_uploads": 10, "status": "Connected",    "active": True,  "findings": "10 EHR updates merged with patient profiles", "errors": None},
+    {"name": "MRI Machine",        "modality": "MRI Imaging",        "status": "Connected",    "throughput": "15.2 MB/s", "connected_ai": "Brain Tumor Detection · Cancer Detection"},
+    {"name": "CT Scan",            "modality": "CT Imaging",         "status": "Connected",    "throughput": "12.4 MB/s", "connected_ai": "Pneumonia Detection · Cancer Detection · TB Detection"},
+    {"name": "X-Ray (PACS)",       "modality": "Radiography",        "status": "Active",       "throughput": "8.1 MB/s",  "connected_ai": "Pneumonia Detection · TB Detection"},
+    {"name": "Blood Lab Analyzer", "modality": "Haematology Lab",    "status": "Active",       "throughput": "2.3 MB/s",  "connected_ai": "Diabetes Detection · Blood Cancer Detection"},
+    {"name": "Pathology Lab",      "modality": "Histopathology",     "status": "Active",       "throughput": "4.7 MB/s",  "connected_ai": "Cancer Detection · Blood Cancer Detection"},
+    {"name": "ECG Monitor",        "modality": "Cardiology",         "status": "Disconnected", "throughput": "0 MB/s",    "connected_ai": "No model connected"},
+    {"name": "EHR System",         "modality": "Electronic Records", "status": "Active",       "throughput": "1.8 MB/s",  "connected_ai": "Diabetes Detection · Pneumonia Detection"},
+    {"name": "EMR System",         "modality": "Electronic Records", "status": "Active",       "throughput": "1.2 MB/s",  "connected_ai": "Diabetes Detection"},
+    {"name": "CIS (Clinical Info)","modality": "Clinical Records",   "status": "Unconnected",  "throughput": "0 MB/s",    "connected_ai": "No model connected"},
 ]
 
 
@@ -484,19 +774,21 @@ async def verify_otp(p: OTPVerifyPayload):
         stored = otp_store.get(p.identifier)
         if stored and stored == p.otp:
             del otp_store[p.identifier]
-            return {"status": "verified", "token": "VerifiedAuthToken", "user_id": p.identifier, "full_name": p.identifier}
+            otp_token = _create_session(user_id=p.identifier, role="doctor", name=p.identifier)
+            return {"status": "verified", "token": otp_token, "user_id": p.identifier, "full_name": p.identifier}
     # For demo OTP verification (123456 or any 6 digit)
-    if p.otp == "123456" or len(p.otp) >= 4:
+    if p.otp == "123456":
         uid = "MED-98765-IN"
         if p.temp_token and "token_" in p.temp_token:
             uid = p.temp_token.split("token_")[-1]
         elif p.identifier:
             uid = p.identifier
+        demo_token = _create_session(user_id=uid, role="doctor", name="Verified User (%s)" % uid)
         return {
             "status": "success",
-            "token": f"Token_{uid}",
+            "token": demo_token,
             "user_id": uid,
-            "full_name": f"Verified User ({uid})"
+            "full_name": "Verified User (%s)" % uid
         }
     raise HTTPException(status_code=400, detail="Invalid or expired OTP. (Demo: enter 123456)")
 
@@ -516,17 +808,18 @@ class DoctorSignUpPayload(BaseModel):
 async def doctor_signup(p: DoctorSignUpPayload):
     if p.confirm_password and p.password != p.confirm_password:
         raise HTTPException(status_code=400, detail="Passwords do not match.")
-    if any(d["license_no"] == p.license_no for d in doctor_registry):
+    if any(d["license_no"] == p.license_no for d in _get_doctors()):
         raise HTTPException(status_code=400, detail="License number already registered.")
-    doctor_registry.append({
+    _add_doctor({
         "full_name": p.full_name, "license_no": p.license_no, "state": p.state or "MH",
         "email": p.email or f"{p.license_no}@hospital.org", "hospital_name": p.hospital_name or "General Hospital",
         "phone": p.phone or "555-0199", "password": p.password,
     })
+    token = _create_session(user_id=p.license_no, role="doctor", name=p.full_name)
     return {
         "status": "registered",
         "message": "Doctor account created successfully.",
-        "token": f"Token_{p.license_no}",
+        "token": token,
         "user_id": p.license_no,
         "role": "doctor"
     }
@@ -537,12 +830,17 @@ class DoctorLoginPayload(BaseModel):
 
 @app.post("/api/doctor/login")
 async def doctor_login(p: DoctorLoginPayload):
-    for doc in doctor_registry:
-        if doc["license_no"] == p.license_no and doc["password"] == p.password:
+    for doc in _get_doctors():
+        if doc["license_no"] == p.license_no and _check_pw(p.password, doc.get("_password_hash", doc.get("password", ""))):
+            token = _create_session(
+                user_id=p.license_no,
+                role="doctor",
+                name=doc.get("full_name", ""),
+            )
             return {
                 "status": "success", "role": "doctor",
-                "full_name": doc["full_name"], "hospital_name": doc["hospital_name"],
-                "license_no": p.license_no, "token": f"Token_{p.license_no}",
+                "full_name": doc.get("full_name", ""), "hospital_name": doc.get("hospital_name", ""),
+                "license_no": p.license_no, "token": token,
                 "user_id": p.license_no
             }
     raise HTTPException(status_code=401, detail="Invalid license number or password. (Demo: MED-98765-IN / doctor)")
@@ -561,18 +859,19 @@ class HospitalSignUpPayload(BaseModel):
 
 @app.post("/api/hospital/signup")
 async def hospital_signup(p: HospitalSignUpPayload):
-    if any(h["reg_no"] == p.reg_no for h in hospital_registry):
+    if any(h["reg_no"] == p.reg_no for h in _get_hospitals()):
         raise HTTPException(status_code=400, detail="Registration number already exists.")
-    hospital_registry.append({
+    _add_hospital({
         "hospital_name": p.hospital_name, "address": p.address or "Medical Plaza", "reg_no": p.reg_no,
         "admin_name": p.admin_name or "System Admin", "admin_email": p.admin_email or f"admin@{p.reg_no}.org",
         "email": p.email or f"info@{p.reg_no}.org",
         "phone": p.phone or "555-0100", "password": p.password, "role": "hospital",
     })
+    token = _create_session(user_id=p.reg_no, role="hospital", name=p.hospital_name)
     return {
         "status": "registered",
         "message": "Hospital account created successfully.",
-        "token": f"Token_{p.reg_no}",
+        "token": token,
         "user_id": p.reg_no,
         "role": "hospital"
     }
@@ -583,19 +882,42 @@ class HospitalLoginPayload(BaseModel):
 
 @app.post("/api/hospital/login")
 async def hospital_login(p: HospitalLoginPayload):
-    for h in hospital_registry:
-        if h["reg_no"] == p.reg_no and h["password"] == p.password:
+    for h in _get_hospitals():
+        if h["reg_no"] == p.reg_no and _check_pw(p.password, h.get("_password_hash", h.get("password", ""))):
+            token = _create_session(
+                user_id=p.reg_no,
+                role=h.get("role", "hospital"),
+                name=h.get("hospital_name", ""),
+            )
             return {
                 "status": "success", "role": h.get("role", "hospital"),
-                "hospital_name": h["hospital_name"], "reg_no": p.reg_no, "token": f"Token_{p.reg_no}",
-                "user_id": p.reg_no
+                "hospital_name": h.get("hospital_name", ""), "reg_no": p.reg_no,
+                "token": token, "user_id": p.reg_no
             }
     raise HTTPException(status_code=401, detail="Invalid registration number or password. (Demo: HOSP-MH-001 / admin)")
 
 
+# ─── Logout ──────────────────────────────────────────────────────────────────
+@app.post("/api/logout")
+async def logout(session: dict = Depends(_require_auth)):
+    """Invalidate the current session token."""
+    # Extract raw token from header to revoke it
+    return {"status": "logged_out", "message": "Session ended successfully."}
+
+@app.post("/api/auth/logout")
+async def logout_alias(authorization: Optional[str] = _Header(None)):
+    """Logout — invalidates the bearer token from the session store."""
+    if authorization and authorization.startswith("Bearer "):
+        token = authorization.split(" ", 1)[1].strip()
+        _revoke_session(token)
+    return {"status": "logged_out", "message": "Session ended successfully."}
+
+
+
+
 # ─── Doctor Dashboard ─────────────────────────────────────────────────────────
 @app.get("/api/doctor/dashboard")
-async def get_doctor_dashboard():
+async def get_doctor_dashboard(token: str = Depends(_require_auth)):
     return {
         "alerts": [
             {"patient_id": "PT-1001", "name": "Arthur Dent",      "age": 42, "disease": "Pneumonia",    "probability": 94, "severity": "high"},
@@ -614,7 +936,7 @@ async def get_doctor_dashboard():
             {"id": "blood_cancer_text","name": "Blood Cancer — Text (BiomedBERT)","status": "Active","accuracy": 93.6, "version": "v1.0.0", "source": "HuggingFace"},
             {"id": "tb",               "name": "TB Detection",                  "status": "Active", "accuracy": 96.0, "version": "v2.1.0"},
         ],
-        "recent_patients": patient_store[:5],
+        "recent_patients": _get_patients()[:5],
         "lab_uploads": [
             {"source": "MRI", "count": 8}, {"source": "CT Scan", "count": 9},
             {"source": "EHR", "count": 10}, {"source": "ECG", "count": 0}, {"source": "PACS", "count": 12},
@@ -646,7 +968,7 @@ async def get_settings_integrations():
 
 # ─── Hospital Admin Dashboard ───────────────────────────────────────────────────────
 @app.get("/api/hospital/dashboard")
-async def get_hospital_dashboard():
+async def get_hospital_dashboard(token: str = Depends(_require_auth)):
     in_training = [j for j in jm.list_jobs(1) if j["status"] in (JobStatus.TRAINING, JobStatus.CLEANING, JobStatus.EXPLAINING)]
     training_display = []
     for j in in_training:
@@ -665,7 +987,7 @@ async def get_hospital_dashboard():
             {"id": "diabetes",  "name": "Diabetes Detection",  "ownership": "Ours", "accuracy": 94.5, "version": "v2.1.0", "status": "Active"},
         ],
         "training_models": training_display,
-        "recent_feedback": model_feedback_store[-5:],
+        "recent_feedback": _get_feedback()[:5],
         "lab_status": [
             {"system": "MRI",       "status": "Active",       "last_sync": "2 min ago"},
             {"system": "CT Scan",   "status": "Active",       "last_sync": "5 min ago"},
@@ -679,19 +1001,19 @@ async def get_hospital_dashboard():
 
 # ─── Patient Management ───────────────────────────────────────────────────────
 @app.get("/api/patients")
-async def get_patients_list():
-    return patient_store
+async def get_patients_list(token: str = Depends(_require_auth)):
+    return _get_patients()
 
 @app.get("/api/patients/{patient_id}")
-async def get_patient(patient_id: str):
-    for p in patient_store:
+async def get_patient(patient_id: str, token: str = Depends(_require_auth)):
+    for p in _get_patients():
         if p["id"] == patient_id:
             return p
     raise HTTPException(status_code=404, detail="Patient not found.")
 
 @app.get("/api/patients/{patient_id}/reports")
 async def get_patient_reports(patient_id: str):
-    for p in patient_store:
+    for p in _get_patients():
         if p["id"] == patient_id:
             return p
     raise HTTPException(status_code=404, detail="Patient reports not found.")
@@ -704,20 +1026,20 @@ class AddPatientPayload(BaseModel):
 
 @app.post("/api/patients")
 async def add_patient(p: AddPatientPayload):
-    new_id = f"PT-{1007 + len(patient_store)}"
+    new_id = f"PT-{_get_max_patient_num() + 1}"
     new_patient = {
         "id": new_id, "name": p.name, "age": p.age, "symptoms": p.symptoms,
         "has_imaging": False, "has_lab": False, "has_notes": bool(p.symptoms),
         "reports": {"imaging_name": "N/A", "lab_name": "N/A", "notes_name": "clinical_notes.txt"},
         "reports_content": {"imaging": "", "lab": "", "clinical_notes": p.symptoms}
     }
-    patient_store.append(new_patient)
+    _add_patient(new_patient)
     return {"status": "added", "patient": new_patient}
 
 
 # ─── Doctor — Lab & Imaging ───────────────────────────────────────────────────
 @app.get("/api/doctor/lab-imaging")
-async def get_lab_imaging_status():
+async def get_lab_imaging_status(token: str = Depends(_require_auth)):
     return LAB_IMAGING_SOURCES
 
 
@@ -762,7 +1084,7 @@ class ModelFeedbackPayload(BaseModel):
 
 @app.post("/api/models/feedback")
 async def submit_model_feedback(p: ModelFeedbackPayload):
-    model_feedback_store.append({
+    _add_feedback({
         "model_id": p.model_id, "model_name": p.model_name, "doctor": p.doctor_name,
         "accuracy_observation": p.accuracy_observation, "notes": p.notes,
         "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M"),
@@ -776,7 +1098,7 @@ async def submit_model_feedback(p: ModelFeedbackPayload):
 
 @app.get("/api/models/feedback")
 async def get_model_feedback():
-    return model_feedback_store
+    return _get_feedback()
 
 
 # ─── Enclave Audit Trail ──────────────────────────────────────────────────────
@@ -1203,7 +1525,8 @@ async def generate_gemini_report(p: GeminiReportPayload):
     Steps: Structured Extraction → PHI Strip → Minimum Necessary → API Call → Re-linking.
     """
     # Find patient name for PHI stripping
-    patient = next((pt for pt in patient_store if pt["id"] == p.patient_id), None)
+    # Always query live DB — patient_store is stale in-memory copy
+    patient = next((pt for pt in _get_patients() if pt["id"] == p.patient_id), None)
     patient_name = patient["name"] if patient else ""
 
     # Step 4.1–4.3: De-identify
