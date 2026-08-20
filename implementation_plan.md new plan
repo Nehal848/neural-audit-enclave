@@ -1,0 +1,72 @@
+# Project Alignment Implementation Plan
+
+This plan details the step-by-step approach to transform the current foundational project into the dual-role system (Doctor vs. Hospital) described in your handwritten notes. 
+
+## User Review Required
+> [!IMPORTANT]
+> **Authentication Mocking:** Since this is a prototype/early phase, I will mock the "OTP" requirement for Sign Up/Sign In (e.g., any 4-digit code works, or it's auto-filled). Let me know if you need actual OTP integration (like Twilio SMS or SendGrid Email).
+>
+> **UI Design Framework:** I will build the new pages using standard TailwindCSS (as the project currently uses). Please confirm if you want me to proceed with this or if you want me to adopt a specific UI library like `shadcn/ui`.
+
+## Open Questions
+- Do you want the **Doctor Login** and **Hospital Login** on the exact same page with a toggle (e.g., "I am a Doctor" / "I am a Hospital"), or separate pages entirely?
+- For the "Create Model" pipeline, should I strictly wire it up to the existing Python `core/automl` backend code, or should I start with a UI-only frontend mockup first?
+
+## Proposed Changes
+
+### 1. Database & Authentication Overhaul (Backend)
+We need to update the SQLite schemas to support all the fields mentioned in Phase 1.
+#### [MODIFY] `core/database.py`
+- Update `doctors` table schema to include: `full_name`, `license_no`, `state`, `hospital_email`, `phone`, `otp_secret`.
+- Update `hospitals` (or create it if it doesn't exist) to include: `hospital_name`, `address`, `reg_no`, `admin_details`, `official_email`, `phone`, `otp_secret`.
+#### [MODIFY] `app/main.py`
+- Update the `/api/doctor/login` and `/api/hospital/login` routes to validate the new fields and OTP.
+- Create `/api/doctor/register` and `/api/hospital/register` endpoints.
+
+---
+
+### 2. Frontend Routing & Layouts (Next.js)
+We will use Next.js Route Groups `(doctor)` and `(hospital)` to cleanly separate the two experiences without cluttering the URL structure.
+
+#### [NEW] `frontend/components/doctor-layout.tsx`
+- Implement the Doctor sidebar: Dashboard, Analysis & Reports, Models, Patients, Laboratory & Imaging, Settings.
+#### [NEW] `frontend/components/hospital-layout.tsx` (Modify existing)
+- Implement the Hospital sidebar: Dashboard, My Model, Model MP, Create New, Version, Integrations, Setting.
+
+---
+
+### 3. Build Hospital Views
+#### [NEW] `frontend/app/(hospital)/dashboard/page.tsx`
+- Active models, doctor feedback, training status.
+#### [NEW] `frontend/app/(hospital)/my-models/page.tsx`
+- List of deployed models, accuracy, and versions.
+#### [NEW] `frontend/app/(hospital)/model-mp/page.tsx`
+- Marketplace UI to browse licensed models and "Purchase".
+#### [NEW] `frontend/app/(hospital)/create-model/page.tsx`
+- Multi-step UI for the AutoML pipeline: Ingestion -> Profiling -> Anonymization -> LLM -> Deploy.
+#### [NEW] `frontend/app/(hospital)/integrations/page.tsx`
+- Status of MRI, CT Scan, and Health System integrations.
+
+---
+
+### 4. Build Doctor Views
+#### [NEW] `frontend/app/(doctor)/dashboard/page.tsx`
+- Patient alerts, recent analysis, AI models in use.
+#### [NEW] `frontend/app/(doctor)/analysis/page.tsx`
+- Table of recent AI model runs (Patient name, source, status, skipped/why).
+#### [NEW] `frontend/app/(doctor)/models/page.tsx`
+- Models currently used by the doctor, performance feedback form.
+#### [NEW] `frontend/app/(doctor)/patients/page.tsx`
+- Searchable patient registry.
+#### [NEW] `frontend/app/(doctor)/laboratory/page.tsx`
+- Data feed from MRI, CT, X-RAY, Blood Reports.
+
+## Verification Plan
+
+### Automated Tests
+- Run FastAPI backend tests if they exist to ensure no existing endpoints broke.
+- Manually run Next.js build (`npm run build`) to ensure no TypeScript or routing errors.
+
+### Manual Verification
+- Register a test Hospital, log in, and verify the Hospital Sidebar and "Create Model" flow.
+- Register a test Doctor, log in, and verify the Doctor Sidebar and "Analysis" flow.

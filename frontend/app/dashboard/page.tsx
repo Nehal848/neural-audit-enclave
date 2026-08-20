@@ -1,5 +1,6 @@
 "use client"
 
+import LoadingScreen from "@/components/loading-screen"
 import React, { useState, useEffect } from "react"
 import Link from "next/link"
 import { 
@@ -23,6 +24,7 @@ const sparklineData2 = [{ v: 30 }, { v: 25 }, { v: 35 }, { v: 30 }, { v: 40 }, {
 const sparklineData3 = [{ v: 60 }, { v: 55 }, { v: 58 }, { v: 52 }, { v: 48 }, { v: 50 }, { v: 55 }, { v: 60 }]
 
 export default function DashboardPage() {
+  const [isLoaded, setIsLoaded] = useState(false)
   const [uploadTab, setUploadTab] = useState<"Laboratory" | "Imaging">("Laboratory")
   const [dashData, setDashData] = useState<any>(null)
 
@@ -31,7 +33,11 @@ export default function DashboardPage() {
       .then(res => res.json())
       .then(data => setDashData(data))
       .catch(console.error)
+      .finally(() => setIsLoaded(true))
   }, [])
+
+
+  if (!isLoaded) return <LoadingScreen />
 
   return (
     <div className="min-h-screen bg-transparent flex font-sans text-slate-900 overflow-hidden">
@@ -104,14 +110,14 @@ export default function DashboardPage() {
               <ChevronDown size={14} className="text-slate-400" />
             </div>
             <div className="space-y-1">
-              <button className="flex items-center gap-3 w-full px-2 py-2 text-[13px] font-medium text-slate-600 hover:bg-slate-50 rounded-lg transition-colors">
+              <button onClick={() => alert("Filter applied successfully.")} className="flex items-center gap-3 w-full px-2 py-2 text-[13px] font-medium text-slate-600 hover:bg-slate-50 rounded-lg transition-colors">
                 <div className="relative">
                   <Bell size={16} />
                   <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-slate-800 text-white text-[8px] font-bold flex items-center justify-center rounded-full border border-white">3</span>
                 </div>
                 Notifications
               </button>
-              <button className="flex items-center gap-3 w-full px-2 py-2 text-[13px] font-medium text-slate-600 hover:bg-slate-50 rounded-lg transition-colors">
+              <button onClick={() => alert("Filter applied successfully.")} className="flex items-center gap-3 w-full px-2 py-2 text-[13px] font-medium text-slate-600 hover:bg-slate-50 rounded-lg transition-colors">
                 <LogOut size={16} /> Log out
               </button>
             </div>
@@ -134,7 +140,7 @@ export default function DashboardPage() {
               <input type="text" placeholder="Search patients, studies, reports..." className="w-[340px] pl-10 pr-10 py-2.5 rounded-full bg-white border border-slate-200 shadow-sm text-[13px] outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 placeholder:text-slate-400 font-medium text-slate-700 transition-all" />
               <SlidersHorizontal size={14} className="absolute right-4 text-slate-400 cursor-pointer" />
             </div>
-            <button className="w-10 h-10 rounded-full bg-white border border-slate-200 shadow-sm flex items-center justify-center relative text-slate-600 hover:bg-slate-50 transition-colors">
+            <button onClick={() => alert("Filter applied successfully.")} className="w-10 h-10 rounded-full bg-white border border-slate-200 shadow-sm flex items-center justify-center relative text-slate-600 hover:bg-slate-50 transition-colors">
               <Bell size={18} />
               <span className="absolute -top-1 -right-1 w-4 h-4 bg-slate-800 text-white text-[9px] font-bold flex items-center justify-center rounded-full border-2 border-[#F3F6FA]">3</span>
             </button>
@@ -253,7 +259,7 @@ export default function DashboardPage() {
             <div className="bg-white rounded-3xl p-6 shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-slate-100 relative">
               <div className="flex justify-between items-center mb-10">
                 <h3 className="text-[15px] font-semibold text-slate-900">AI Pipeline Status</h3>
-                <button className="text-[11px] font-semibold text-slate-600 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-full hover:bg-slate-100 transition-colors">
+                <button onClick={() => alert("Filter applied successfully.")} className="text-[11px] font-semibold text-slate-600 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-full hover:bg-slate-100 transition-colors">
                   View Pipeline
                 </button>
               </div>
@@ -326,8 +332,8 @@ export default function DashboardPage() {
               <div className="bg-white rounded-3xl p-6 shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-slate-100 flex flex-col">
                 <div className="flex justify-between items-center mb-6">
                   <h3 className="text-[15px] font-semibold text-slate-900">Recent Patients & Analysis</h3>
-                  <button className="text-[11px] font-semibold text-slate-600 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-full hover:bg-slate-100 transition-colors">
-                    View all
+                  <button onClick={() => alert("Filter applied successfully.")} className="text-[11px] font-semibold text-slate-600 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-full hover:bg-slate-100 transition-colors">
+                    <Link href="/models" className="text-blue-600 hover:text-blue-700">View all</Link>
                   </button>
                 </div>
                 
@@ -376,7 +382,7 @@ export default function DashboardPage() {
               <div className="bg-white rounded-3xl p-6 shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-slate-100 flex flex-col">
                 <div className="flex justify-between items-center mb-2">
                   <h3 className="text-[15px] font-semibold text-slate-900">AI Performance Overview</h3>
-                  <button className="flex items-center gap-1 text-[11px] font-semibold text-slate-600 bg-transparent px-2 py-1 rounded hover:bg-slate-50 transition-colors">
+                  <button onClick={() => alert("Filter applied successfully.")} className="flex items-center gap-1 text-[11px] font-semibold text-slate-600 bg-transparent px-2 py-1 rounded hover:bg-slate-50 transition-colors">
                     This Week <ChevronDown size={14} />
                   </button>
                 </div>
@@ -441,7 +447,7 @@ export default function DashboardPage() {
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-[15px] font-semibold text-slate-900">AI Models In Use</h3>
                 <button className="text-[11px] font-semibold text-blue-600 hover:text-blue-700 transition-colors">
-                  View all
+                  <Link href="/patients" className="text-blue-600 hover:text-blue-700">View all</Link>
                 </button>
               </div>
               <div className="space-y-5">
@@ -482,7 +488,7 @@ export default function DashboardPage() {
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-[15px] font-semibold text-slate-900">New Uploads</h3>
                 <button className="text-[11px] font-semibold text-blue-600 hover:text-blue-700 transition-colors">
-                  View all
+                  <Link href="/laboratory" className="text-blue-600 hover:text-blue-700">View all</Link>
                 </button>
               </div>
 

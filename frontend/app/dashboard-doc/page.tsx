@@ -1,7 +1,9 @@
 "use client"
 
 "use client"
+import LoadingScreen from "@/components/loading-screen"
 import React, { useState, useEffect } from "react"
+import Link from "next/link"
 import DocLayout from "@/components/doc-layout"
 import { 
   Wind, Brain, Heart, Activity, Bone, Star, Clock, 
@@ -10,19 +12,87 @@ import {
 } from "lucide-react"
 
 export default function DocDashboardPage() {
+  const [isLoaded, setIsLoaded] = useState(false)
   const [dashData, setDashData] = useState<any>(null)
   const [auditLogs, setAuditLogs] = useState<any[]>([])
+  const [modelInfo, setModelInfo] = useState<any>(null);
+  const [formData, setFormData] = useState<any>({});
+  const [customResult, setCustomResult] = useState<any>(null);
+  const [customLoading, setCustomLoading] = useState(false);
+  const getAuthHeaders = (isFormData = false) => {
+    const headers: any = {};
+    try {
+      const session = JSON.parse(localStorage.getItem("hospital_ai_session") || "{}");
+      if (session.token) headers["Authorization"] = `Bearer ${session.token}`;
+    } catch (e) {}
+    if (!isFormData) headers["Content-Type"] = "application/json";
+    return headers;
+  }
+
+  const loadCustomModel = async (jobId: string) => {
+    if (!jobId) {
+      setModelInfo(null);
+      setFormData({});
+      setCustomResult(null);
+      return;
+    }
+    try {
+      const res = await fetch(`/api/models/custom/${jobId}/info`, { headers: getAuthHeaders() });
+      const data = await res.json();
+      setModelInfo(data);
+      setFormData({});
+      setCustomResult(null);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const runCustomInference = async () => {
+    if (!modelInfo) return;
+    setCustomLoading(true);
+    setCustomResult(null);
+    try {
+      const res = await fetch(`/api/models/custom/${modelInfo.job_id}/predict`, {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: JSON.stringify(formData)
+      });
+      const data = await res.json();
+      setCustomResult(data);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setCustomLoading(false);
+    }
+  };
 
   useEffect(() => {
     fetch("/api/hospital/dashboard")
       .then(res => res.json())
       .then(data => setDashData(data))
-      .catch(console.error);
+      .catch(console.error)
+      .finally(() => setIsLoaded(true));
+      
     fetch("/api/audit/logs")
       .then(res => res.json())
       .then(data => setAuditLogs(Array.isArray(data) ? data : (data.logs || [])))
       .catch(console.error);
+
+    // Connect to WebSocket for real-time training updates
+    const ws = new WebSocket("ws://localhost:8000/api/ws/dashboard");
+    ws.onmessage = (event) => {
+      try {
+        const payload = JSON.parse(event.data);
+        if (payload.training_models) {
+          setDashData((prev: any) => prev ? { ...prev, training_models: payload.training_models } : prev);
+        }
+      } catch (e) { console.error("WS Parse error", e) }
+    };
+    return () => ws.close();
   }, [])
+
+
+  if (!isLoaded) return <LoadingScreen />
 
   return (
     <DocLayout 
@@ -35,7 +105,7 @@ export default function DocDashboardPage() {
         <div className="flex flex-col gap-4">
           <div className="flex justify-between items-center">
              <h2 className="text-[16px] font-bold text-slate-900">Active & In Use Models</h2>
-             <button className="text-[12px] font-bold text-blue-600 hover:text-blue-700">View all models</button>
+             <Link href="/dashboard-doc/models" className="text-[12px] font-bold text-blue-600 hover:text-blue-700">View all models</Link>
           </div>
           
           <div className="flex gap-4 overflow-x-auto pb-2 custom-scrollbar">
@@ -98,7 +168,7 @@ export default function DocDashboardPage() {
           <div className="bg-white rounded-3xl p-6 shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-slate-100 flex flex-col">
             <div className="flex justify-between items-center mb-5">
                <h3 className="text-[14px] font-bold text-slate-900">Recent Feedback from Doctors</h3>
-               <button className="text-[11px] font-bold text-blue-600">View all</button>
+               <Link href="/dashboard-doc/models" className="text-[11px] font-bold text-blue-600 hover:text-blue-700">View all</Link>
             </div>
             <div className="space-y-5">
               {auditLogs && auditLogs.slice(0, 4).map((f: any, i: number) => {
@@ -127,7 +197,7 @@ export default function DocDashboardPage() {
           <div className="bg-white rounded-3xl p-6 shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-slate-100 flex flex-col">
             <div className="flex justify-between items-center mb-5">
                <h3 className="text-[14px] font-bold text-slate-900">Training (Ongoing)</h3>
-               <button className="text-[11px] font-bold text-blue-600">View all</button>
+               <Link href="/dashboard-doc/integration" className="text-[11px] font-bold text-blue-600 hover:text-blue-700">View all</Link>
             </div>
             <div className="space-y-5">
               {(dashData?.training_models || []).map((t: any, i: number) => {
@@ -161,7 +231,7 @@ export default function DocDashboardPage() {
           <div className="bg-white rounded-3xl p-6 shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-slate-100 flex flex-col">
             <div className="flex justify-between items-center mb-5">
                <h3 className="text-[14px] font-bold text-slate-900">Integration Status</h3>
-               <button className="text-[11px] font-bold text-blue-600">View all</button>
+               <Link href="/dashboard-doc/settings" className="text-[11px] font-bold text-blue-600 hover:text-blue-700">View all</Link>
             </div>
             <div className="grid grid-cols-2 gap-3 mt-4">
               {(dashData?.lab_status || []).map((sys: any, i: number) => {
@@ -181,6 +251,75 @@ export default function DocDashboardPage() {
             </div>
           </div>
 
+        </div>
+
+        {/* ── CUSTOM AI INFERENCE ENGINE ────────────────────────────────────── */}
+        <div className="bg-white rounded-3xl p-6 shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-slate-100 flex flex-col mb-6">
+           <div className="flex justify-between items-center mb-5">
+              <h3 className="text-[14px] font-bold text-slate-900">Custom ML Inference Engine</h3>
+           </div>
+           <div className="grid grid-cols-3 gap-6">
+              <div className="col-span-1 space-y-4">
+                 <div className="text-[12px] font-bold text-slate-700">Select Deployed Model</div>
+                 <select 
+                    className="w-full border border-slate-200 rounded-xl px-3 py-2 text-[12px] text-slate-700 outline-none focus:border-blue-500"
+                    onChange={e => loadCustomModel(e.target.value)}
+                 >
+                    <option value="">-- Select Model --</option>
+                    {(dashData?.active_models || []).filter((m:any) => m.ownership === "Hospital").map((m: any, i: number) => (
+                      <option key={i} value={m.id}>{m.name}</option>
+                    ))}
+                 </select>
+                 {modelInfo && (
+                   <div className="p-4 bg-blue-50 rounded-xl border border-blue-100 mt-4">
+                      <div className="text-[11px] font-bold text-blue-800 mb-1">Model Details</div>
+                      <div className="text-[10px] text-blue-600">Problem Type: {modelInfo.problem_type}</div>
+                      <div className="text-[10px] text-blue-600 mt-1">Requires {modelInfo.feature_names.length} input features.</div>
+                   </div>
+                 )}
+              </div>
+              <div className="col-span-2">
+                 {modelInfo ? (
+                   <form onSubmit={e => { e.preventDefault(); runCustomInference(); }} className="space-y-4">
+                      <div className="grid grid-cols-3 gap-4">
+                         {modelInfo.feature_names.map((feat: string, i: number) => (
+                           <div key={i}>
+                             <label className="block text-[10px] font-bold text-slate-600 mb-1">{feat}</label>
+                             <input 
+                               type="text" 
+                               required 
+                               className="w-full border border-slate-200 rounded-lg px-3 py-1.5 text-[12px] text-slate-700 outline-none focus:border-blue-500"
+                               value={formData[feat] || ""}
+                               onChange={e => setFormData({...formData, [feat]: e.target.value})}
+                             />
+                           </div>
+                         ))}
+                      </div>
+                      <div className="flex gap-4 items-center pt-2">
+                        <button type="submit" disabled={customLoading} className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-[12px] font-bold rounded-xl shadow-lg shadow-blue-500/20 transition-all disabled:opacity-50">
+                           {customLoading ? "Running Inference..." : "Run ML Inference"}
+                        </button>
+                        {customResult && (
+                          <div className="flex items-center gap-3 p-2 px-4 rounded-xl border border-emerald-200 bg-emerald-50">
+                             <CheckCircle2 size={16} className="text-emerald-600" />
+                             <div>
+                               <div className="text-[10px] font-bold text-emerald-800">Prediction: {customResult.prediction}</div>
+                               {customResult.confidence && <div className="text-[9px] font-medium text-emerald-600">Confidence: {customResult.confidence}%</div>}
+                             </div>
+                          </div>
+                        )}
+                        {customResult?.error && (
+                           <div className="text-[10px] text-rose-500 font-bold">{customResult.error}</div>
+                        )}
+                      </div>
+                   </form>
+                 ) : (
+                   <div className="h-full min-h-[150px] flex items-center justify-center border-2 border-dashed border-slate-100 rounded-2xl text-[12px] font-semibold text-slate-400">
+                     Select a custom model to generate inference form
+                   </div>
+                 )}
+              </div>
+           </div>
         </div>
 
         {/* ── BOTTOM METRICS ROW ──────────────────────────────────────────── */}

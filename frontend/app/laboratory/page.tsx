@@ -1,5 +1,6 @@
 "use client"
 
+import LoadingScreen from "@/components/loading-screen"
 import React, { useState, useEffect } from "react"
 import HospitalLayout from "@/components/hospital-layout"
 import { 
@@ -9,6 +10,7 @@ import {
 } from "lucide-react"
 
 export default function LaboratoryPage() {
+  const [isLoaded, setIsLoaded] = useState(false)
   const [labData, setLabData] = useState<any>({ scans: [], systems: [] })
 
   useEffect(() => {
@@ -16,7 +18,11 @@ export default function LaboratoryPage() {
       .then(res => res.json())
       .then(data => setLabData(data))
       .catch(console.error)
+      .finally(() => setIsLoaded(true))
   }, [])
+
+  if (!isLoaded) return <LoadingScreen />
+
   return (
     <HospitalLayout 
       title="Laboratory & Imaging" 

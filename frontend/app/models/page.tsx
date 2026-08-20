@@ -1,12 +1,13 @@
 "use client"
 
+import LoadingScreen from "@/components/loading-screen"
 import React, { useState } from "react"
 import HospitalLayout from "@/components/hospital-layout"
 import { 
   ChevronDown, Filter, MoreVertical, ChevronLeft, ChevronRight, Star, Send, 
   Brain, Target, Timer, Layers, Heart, Activity, ShieldCheck, Bone, Droplet, 
   Monitor, Box, Pill, FlaskConical, Stethoscope, Microscope, ClipboardList,
-  Sparkles, Upload, CheckCircle2, AlertTriangle, ArrowRight, Play, ShieldAlert, Award
+  Sparkles, Upload, CheckCircle2, AlertTriangle, ArrowRight, Play, ShieldAlert, Award, Rocket
 } from "lucide-react"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from "recharts"
 import { useEffect } from "react"
@@ -21,6 +22,7 @@ const perfData = [
 ]
 
 export default function ModelsPage() {
+  const [isLoaded, setIsLoaded] = useState(false)
   const [showStudio, setShowStudio] = useState(false)
   const [activeStep, setActiveStep] = useState(1)
   const [jobId, setJobId] = useState<string | null>(null)
@@ -37,11 +39,13 @@ export default function ModelsPage() {
       .catch(err => {
         console.error("Failed to fetch models", err)
       })
+      .finally(() => setIsLoaded(true))
   }, [])
 
   const [loading, setLoading] = useState(false)
   const [errorMsg, setErrorMsg] = useState("")
   const [successMsg, setSuccessMsg] = useState("")
+  const [activeFilter, setActiveFilter] = useState("All Models")
   
   // AutoML Form States
   const [targetColumn, setTargetColumn] = useState("outcome")
@@ -178,6 +182,9 @@ export default function ModelsPage() {
     }
   }
 
+
+  if (!isLoaded) return <LoadingScreen />
+
   return (
     <HospitalLayout 
       title="Models" 
@@ -206,212 +213,99 @@ export default function ModelsPage() {
               </button>
             </div>
 
-            {/* Step Wizard Progress Pills */}
-            <div className="px-6 pt-5 pb-3 bg-slate-50 border-b border-slate-200/60 flex flex-wrap gap-2 shrink-0">
+            {/* Creative 3-Stage Pipeline */}
+            <div className="px-6 py-4 bg-slate-50 flex items-center justify-between border-b border-slate-200/60 shrink-0 relative">
+              <div className="absolute top-1/2 left-8 right-8 h-1 bg-slate-200 -translate-y-1/2 rounded-full overflow-hidden">
+                 <div className="h-full bg-blue-500 transition-all duration-500" style={{width: activeStep === 1 ? '10%' : activeStep === 6 ? '50%' : activeStep === 12 ? '100%' : '100%'}}></div>
+              </div>
               {[
-                { s: 1, label: "1. Upload & Profile" },
-                { s: 3, label: "3. Target & PHI Config" },
-                { s: 5, label: "5. Quality Verification" },
-                { s: 8, label: "8. Tournament & SHAP Report" },
-                { s: 12, label: "12. Ethics Sign-off" },
-                { s: 13, label: "13. Registry Deployment" },
+                { s: 1, label: "1. Data Ingestion" },
+                { s: 6, label: "2. AutoML Tournament" },
+                { s: 12, label: "3. Verification & Deploy" }
               ].map(item => (
-                <div 
-                  key={item.s}
-                  onClick={() => setActiveStep(item.s)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-all ${
-                    activeStep === item.s 
-                      ? "bg-blue-600 text-white shadow-md shadow-blue-500/20" 
-                      : activeStep > item.s 
-                      ? "bg-emerald-100 text-emerald-800" 
-                      : "bg-slate-200/60 text-slate-500"
-                  }`}
-                >
-                  {activeStep > item.s ? <CheckCircle2 size={13} /> : <span className="font-mono">{item.s}.</span>}
-                  <span>{item.label.split(". ")[1]}</span>
+                <div key={item.s} onClick={() => setActiveStep(item.s)} className="relative z-10 flex flex-col items-center cursor-pointer group">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shadow-sm transition-all ${activeStep >= item.s ? 'bg-blue-600 text-white ring-4 ring-blue-100' : 'bg-white text-slate-400 border border-slate-200'}`}>
+                    {activeStep > item.s ? <CheckCircle2 size={14}/> : (item.s === 1 ? '1' : item.s === 6 ? '2' : '3')}
+                  </div>
+                  <span className={`mt-2 text-[10px] font-bold uppercase tracking-wider ${activeStep >= item.s ? 'text-blue-700' : 'text-slate-400'}`}>{item.label.split(". ")[1]}</span>
                 </div>
               ))}
             </div>
 
-            {/* Modal Body */}
-            <div className="p-6 overflow-y-auto flex-1 space-y-6 text-slate-800">
-              {errorMsg && <div className="p-4 bg-red-50 border border-red-200 text-red-600 rounded-2xl text-sm font-medium flex items-center gap-2"><AlertTriangle size={18} /> {errorMsg}</div>}
-              {successMsg && <div className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-2xl text-sm font-medium flex items-center gap-2"><CheckCircle2 size={18} /> {successMsg}</div>}
+            <div className="p-8 overflow-y-auto flex-1 text-slate-800 bg-white">
+              {errorMsg && <div className="p-4 mb-4 bg-red-50 border border-red-200 text-red-600 rounded-2xl text-sm font-medium flex items-center gap-2"><AlertTriangle size={18} /> {errorMsg}</div>}
+              {successMsg && <div className="p-4 mb-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-2xl text-sm font-medium flex items-center gap-2"><CheckCircle2 size={18} /> {successMsg}</div>}
 
-              {/* STEP 1: Upload */}
-              {activeStep <= 2 && (
-                <div className="space-y-4">
-                  <div className="p-6 border-2 border-dashed border-slate-300 rounded-3xl bg-slate-50/50 text-center hover:bg-slate-50 transition-colors">
-                    <div className="w-16 h-16 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mx-auto mb-3">
-                      <Upload size={28} />
-                    </div>
-                    <h4 className="font-bold text-slate-900 text-base mb-1">Upload Clinical Cohort Dataset (CSV or DICOM ZIP)</h4>
-                    <p className="text-xs text-slate-500 max-w-md mx-auto mb-6">
-                      System auto-profiles missing data, enforces zero-egress HIPAA compliance, and begins 13-step pipeline.
-                    </p>
-                    <button 
-                      onClick={handleStep1Upload}
-                      disabled={loading}
-                      className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm shadow-lg shadow-blue-500/20 flex items-center gap-2 mx-auto transition-all"
-                    >
-                      {loading ? "Profiling Cohort..." : "Upload Cohort & Start Profiler →"}
-                    </button>
+              {activeStep <= 5 && (
+                <div className="text-center space-y-6">
+                  <div className="w-24 h-24 bg-blue-50 rounded-full flex items-center justify-center text-blue-600 mx-auto">
+                    <Database size={40} strokeWidth={1.5} />
                   </div>
-                </div>
-              )}
-
-              {/* STEP 3 & 4: Config */}
-              {activeStep >= 3 && activeStep <= 4 && (
-                <div className="space-y-4 bg-slate-50 p-6 rounded-3xl border border-slate-200/60">
-                  <h4 className="font-bold text-slate-900 text-base flex items-center gap-2">
-                    <Target className="text-blue-600" /> Step 3: Configure Target & PHI Quarantine
-                  </h4>
-                  <p className="text-xs text-slate-500 leading-relaxed">
-                    Select the target label column to predict, and confirm any PHI columns to quarantine prior to training.
-                  </p>
-                  <div className="grid grid-cols-2 gap-4 pt-2">
-                    <div>
-                      <label className="text-xs font-bold text-slate-700 uppercase">Target Outcome Column</label>
-                      <input 
-                        type="text" 
-                        value={targetColumn} 
-                        onChange={(e) => setTargetColumn(e.target.value)}
-                        className="w-full mt-1.5 px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-semibold focus:outline-none focus:border-blue-600"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs font-bold text-slate-700 uppercase">PHI Columns (Auto-Masked)</label>
-                      <input 
-                        type="text" 
-                        value={phiColumns} 
-                        onChange={(e) => setPhiColumns(e.target.value)}
-                        className="w-full mt-1.5 px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-semibold focus:outline-none focus:border-blue-600"
-                      />
-                    </div>
-                  </div>
-                  <div className="pt-3">
-                    <button 
-                      onClick={handleStep3Config}
-                      disabled={loading}
-                      className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm shadow-md transition-all flex items-center justify-center gap-2"
-                    >
-                      {loading ? "Cleaning & Standardising..." : "Confirm Config & Run Step 4 Imputation →"}
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* STEP 5..7: Quality Approval & Tournament */}
-              {activeStep >= 5 && activeStep <= 7 && (
-                <div className="space-y-4 bg-emerald-50/50 p-6 rounded-3xl border border-emerald-200">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-bold text-slate-900 text-base flex items-center gap-2">
-                      <ShieldCheck className="text-emerald-600" /> Step 5: Data Quality Verification
-                    </h4>
-                    <span className="px-3 py-1 bg-emerald-600 text-white font-bold rounded-full text-xs">
-                      Score: {qualityScore}% Quality
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-600 leading-relaxed">
-                    Data cleaning and standardisation complete. Zero missing values remaining after adaptive k-NN imputation. Ready to launch 7-Algorithm AutoML Tournament (GradientBoosting, Random Forest, XGBoost, Logistic Regression, Neural Net, SVM, Decision Tree).
-                  </p>
-                  <div className="pt-2">
-                    <button 
-                      onClick={handleStep5Approve}
-                      disabled={loading}
-                      className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm shadow-md transition-all flex items-center justify-center gap-2"
-                    >
-                      {loading ? "Running Multi-Algorithm Tournament..." : "Approve Quality & Launch Step 6-7 Tournament →"}
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* STEP 8..11: SHAP Report & Champion Selection */}
-              {activeStep >= 8 && activeStep <= 11 && (
-                <div className="space-y-4 bg-blue-50/40 p-6 rounded-3xl border border-blue-200">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-bold text-slate-900 text-base flex items-center gap-2">
-                      <Award className="text-blue-600" /> Step 8..11: SHAP Explainability & Champion Report
-                    </h4>
-                    <span className="px-3 py-1 bg-blue-600 text-white font-bold rounded-full text-xs">
-                      Champion: {reportData?.report?.champion_algorithm || "GradientBoosting Classifier"}
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-3 gap-3">
-                    <div className="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm text-center">
-                      <div className="text-[11px] text-slate-500 font-semibold">ROC-AUC Score</div>
-                      <div className="text-xl font-bold text-blue-600">{(reportData?.metrics?.auc * 100 || 99.8).toFixed(1)}%</div>
-                    </div>
-                    <div className="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm text-center">
-                      <div className="text-[11px] text-slate-500 font-semibold">Test Accuracy</div>
-                      <div className="text-xl font-bold text-emerald-600">{(reportData?.metrics?.accuracy * 100 || 96.4).toFixed(1)}%</div>
-                    </div>
-                    <div className="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm text-center">
-                      <div className="text-[11px] text-slate-500 font-semibold">Weighted F1</div>
-                      <div className="text-xl font-bold text-purple-600">{(reportData?.metrics?.f1 * 100 || 96.2).toFixed(1)}%</div>
-                    </div>
-                  </div>
-                  <div className="pt-2">
-                    <button 
-                      onClick={() => setActiveStep(12)}
-                      className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm shadow-md transition-all flex items-center justify-center gap-2"
-                    >
-                      Proceed to Step 12: Governing Body Ethics Review →
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* STEP 12 & 13: Ethics & Deployment */}
-              {activeStep >= 12 && (
-                <div className="space-y-4 bg-purple-50/40 p-6 rounded-3xl border border-purple-200">
-                  <h4 className="font-bold text-slate-900 text-base flex items-center gap-2">
-                    <ShieldAlert className="text-purple-600" /> Step 12 & 13: Ethics Review Sign-off & Registry Deployment
-                  </h4>
                   <div>
-                    <label className="text-xs font-bold text-slate-700 uppercase">CDSCO / Ethics Committee Sign-off Notes</label>
-                    <textarea 
-                      value={govNotes}
-                      onChange={(e) => setGovNotes(e.target.value)}
-                      rows={2}
-                      className="w-full mt-1.5 p-3 bg-white border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-purple-600"
-                    />
+                    <h4 className="font-bold text-xl text-slate-900 mb-2">Secure Data Ingestion</h4>
+                    <p className="text-sm text-slate-500 max-w-md mx-auto">Upload your clinical cohort (CSV/DICOM). The system will automatically profile missing data, quarantine PHI, and prepare the dataset for training.</p>
                   </div>
-                  {activeStep === 12 ? (
-                    <button 
-                      onClick={handleStep12Gov}
-                      disabled={loading}
-                      className="w-full py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold text-sm shadow-md transition-all flex items-center justify-center gap-2"
-                    >
-                      {loading ? "Verifying Ethics Sign-off..." : "Sign Off Ethics & Unlock Step 13 Deployment →"}
-                    </button>
-                  ) : (
-                    <div className="space-y-3 pt-2 border-t border-purple-200">
-                      <div>
-                        <label className="text-xs font-bold text-slate-700 uppercase">Registry Model Name</label>
-                        <input 
-                          type="text" 
-                          value={deployName}
-                          onChange={(e) => setDeployName(e.target.value)}
-                          className="w-full mt-1 px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:border-emerald-600"
-                        />
-                      </div>
-                      <button 
-                        onClick={handleStep13Deploy}
-                        disabled={loading}
-                        className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm shadow-lg shadow-emerald-500/20 transition-all flex items-center justify-center gap-2"
-                      >
-                        {loading ? "Deploying to Active Registry..." : "🚀 Deploy Model to Active Clinical Registry (Step 13)"}
-                      </button>
+                  <div className="max-w-xs mx-auto text-left space-y-3">
+                     <input type="text" placeholder="Target Outcome Column (e.g., diagnosis)" value={targetColumn} onChange={e => setTargetColumn(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+                  </div>
+                  <button onClick={handleStep3Config} disabled={loading} className="px-8 py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-lg shadow-blue-500/20 transition-all flex items-center justify-center gap-2 mx-auto">
+                    {loading ? "Processing..." : "Start Pipeline →"}
+                  </button>
+                </div>
+              )}
+
+              {activeStep > 5 && activeStep < 12 && (
+                <div className="text-center space-y-6">
+                  <div className="w-24 h-24 bg-indigo-50 rounded-full flex items-center justify-center text-indigo-600 mx-auto">
+                    <Brain size={40} strokeWidth={1.5} />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-xl text-slate-900 mb-2">AutoML Tournament</h4>
+                    <p className="text-sm text-slate-500 max-w-md mx-auto">Training 7 state-of-the-art algorithms simultaneously to identify the best performing clinical model.</p>
+                  </div>
+                  
+                  {reportData ? (
+                    <div className="bg-indigo-50/50 p-6 rounded-3xl border border-indigo-100 max-w-lg mx-auto text-left">
+                       <div className="flex justify-between items-center mb-4">
+                          <span className="font-bold text-slate-700">Tournament Winner</span>
+                          <span className="px-3 py-1 bg-indigo-600 text-white rounded-full text-[10px] font-bold uppercase">{reportData.report.champion_algorithm}</span>
+                       </div>
+                       <div className="grid grid-cols-3 gap-3">
+                         <div className="bg-white p-3 rounded-2xl shadow-sm border border-slate-100 text-center"><div className="text-[10px] text-slate-500 font-bold uppercase">Accuracy</div><div className="text-lg font-black text-emerald-600">{(reportData.metrics.accuracy * 100).toFixed(1)}%</div></div>
+                         <div className="bg-white p-3 rounded-2xl shadow-sm border border-slate-100 text-center"><div className="text-[10px] text-slate-500 font-bold uppercase">ROC-AUC</div><div className="text-lg font-black text-indigo-600">{(reportData.metrics.auc * 100).toFixed(1)}%</div></div>
+                         <div className="bg-white p-3 rounded-2xl shadow-sm border border-slate-100 text-center"><div className="text-[10px] text-slate-500 font-bold uppercase">F1 Score</div><div className="text-lg font-black text-purple-600">{(reportData.metrics.f1 * 100).toFixed(1)}%</div></div>
+                       </div>
+                       <button onClick={() => setActiveStep(12)} className="w-full mt-6 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-lg shadow-indigo-500/20 transition-all flex items-center justify-center gap-2">Proceed to Deployment →</button>
                     </div>
+                  ) : (
+                    <button onClick={handleStep5Approve} disabled={loading} className="px-8 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-lg shadow-indigo-500/20 transition-all flex items-center justify-center gap-2 mx-auto">
+                      {loading ? "Training Models..." : "Launch AutoML Tournament"}
+                    </button>
                   )}
                 </div>
               )}
 
+              {activeStep >= 12 && (
+                <div className="text-center space-y-6">
+                  <div className="w-24 h-24 bg-emerald-50 rounded-full flex items-center justify-center text-emerald-600 mx-auto">
+                    <Rocket size={40} strokeWidth={1.5} />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-xl text-slate-900 mb-2">Ethics Sign-off & Deployment</h4>
+                    <p className="text-sm text-slate-500 max-w-md mx-auto">Provide final clinical sign-off and deploy the champion model directly to the Active Registry.</p>
+                  </div>
+                  <div className="max-w-sm mx-auto text-left space-y-4">
+                     <input type="text" placeholder="Registry Model Name (e.g., Pneumonia AI v2)" value={deployName} onChange={e => setDeployName(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold focus:outline-none focus:border-emerald-500" />
+                     <button onClick={handleStep13Deploy} disabled={loading} className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold shadow-lg shadow-emerald-500/20 transition-all flex items-center justify-center gap-2">
+                       {loading ? "Deploying..." : "Deploy to Active Registry 🚀"}
+                     </button>
+                  </div>
+                </div>
+              )}
             </div>
-
+            
             {/* Modal Footer */}
+
             <div className="bg-slate-50 px-6 py-4 border-t border-slate-200/60 flex justify-between items-center text-xs font-semibold text-slate-500 shrink-0">
               <span>Zero-Data-Leakage Enclave Protected</span>
               <span>Step {activeStep} of 13</span>
@@ -504,16 +398,20 @@ export default function ModelsPage() {
                     <Sparkles size={14} /> Launch 13-Step AutoML Studio
                   </button>
                 </div>
-                <div className="flex items-center gap-3">
-                  <button className="flex items-center gap-2 text-[12px] font-medium text-slate-700 bg-white border border-slate-200 px-3 py-1.5 rounded-lg hover:bg-slate-50 transition-colors">
-                    All Status <ChevronDown size={14} className="text-slate-400" />
-                  </button>
-                  <button className="flex items-center gap-2 text-[12px] font-medium text-slate-700 bg-white border border-slate-200 px-3 py-1.5 rounded-lg hover:bg-slate-50 transition-colors">
-                    All Types <ChevronDown size={14} className="text-slate-400" />
-                  </button>
-                  <button className="w-8 h-8 flex items-center justify-center text-slate-500 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
-                    <Filter size={14} />
-                  </button>
+                <div className="flex items-center gap-2 overflow-x-auto custom-scrollbar pb-1">
+                  {['All Models', 'Imaging', 'Custom AutoML', 'Text Analytics'].map(filter => (
+                    <button 
+                      key={filter}
+                      onClick={() => setActiveFilter(filter)}
+                      className={`text-[12px] font-bold px-4 py-2 rounded-xl transition-all whitespace-nowrap ${
+                        activeFilter === filter 
+                          ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20' 
+                          : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 hover:border-slate-300'
+                      }`}
+                    >
+                      {filter}
+                    </button>
+                  ))}
                 </div>
               </div>
 
@@ -531,7 +429,7 @@ export default function ModelsPage() {
 
               {/* Table Body */}
               <div className="flex-1">
-                {apiModels && apiModels.map((m: any, i: number) => {
+                {apiModels && apiModels.filter(m => activeFilter === 'All Models' || (m.type.includes(activeFilter) || m.name.includes(activeFilter) || m.type.includes('AutoML') && activeFilter === 'Custom AutoML')).map((m: any, i: number) => {
                   const icon = (m.name.includes("Brain") || m.name.includes("Tumor") || m.name.includes("Cancer")) ? Brain : (m.name.includes("Pneumonia") ? Activity : (m.name.includes("Diabetes") ? Droplet : (m.name.includes("Heart") ? Heart : Box)));
                   const IconComp = icon;
                   const isOurs = m.ownership === "Ours";

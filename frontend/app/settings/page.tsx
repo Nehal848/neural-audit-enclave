@@ -1,5 +1,6 @@
 "use client"
 
+import LoadingScreen from "@/components/loading-screen"
 import React, { useState, useEffect } from "react"
 import HospitalLayout from "@/components/hospital-layout"
 import { 
@@ -19,6 +20,7 @@ const ToggleSwitch = ({ active, onClick }: { active: boolean, onClick: () => voi
 )
 
 export default function SettingsPage() {
+  const [isLoaded, setIsLoaded] = useState(false)
   const [integrations, setIntegrations] = useState<any[]>([])
 
   useEffect(() => {
@@ -26,6 +28,7 @@ export default function SettingsPage() {
       .then(res => res.json())
       .then(data => setIntegrations(data.integrations || []))
       .catch(console.error)
+      .finally(() => setIsLoaded(true))
   }, [])
   const [toggles, setToggles] = useState({
     aiConfidence: true,
@@ -39,6 +42,9 @@ export default function SettingsPage() {
   const toggle = (key: keyof typeof toggles) => {
     setToggles(prev => ({ ...prev, [key]: !prev[key] }))
   }
+
+
+  if (!isLoaded) return <LoadingScreen />
 
   return (
     <HospitalLayout 
@@ -194,7 +200,7 @@ export default function SettingsPage() {
                  const IconComp = s.system.includes('MRI') ? Target : (s.system.includes('CT') ? Scan : (s.system.includes('X-Ray') ? Bone : (s.system.includes('Lab') ? FlaskConical : (s.system.includes('Pathology') ? Microscope : Activity))));
                  return (
 
-                 <div key={i} className="flex justify-between items-center">
+                 <div key={i} className="flex justify-between items-center cursor-pointer hover:bg-slate-50 p-2 -mx-2 rounded-xl transition-colors" onClick={() => alert(`Connection to ${s.system} is ${s.status}.`)}>
                    <div className="flex items-center gap-3 text-[12px] font-semibold text-slate-700">
                      <IconComp size={16} strokeWidth={1.5} className="text-slate-600" /> {s.system}
                    </div>

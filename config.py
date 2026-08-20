@@ -11,8 +11,14 @@ load_dotenv(dotenv_path=Path(__file__).resolve().parent / ".env")
 
 # ── Paths ────────────────────────────────────────────────────────────────────
 BASE_DIR            = Path(__file__).resolve().parent
+
+# PostgreSQL connection string
+DATABASE_URL        = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/elvon_db")
+
+# Fallbacks for backwards compatibility (can be removed if no longer accessed directly)
 AUDIT_DB_PATH       = os.getenv("AUDIT_DB_PATH", str(BASE_DIR / "enclave_audit_trail.db"))
 HOSPITAL_DB_PATH    = os.getenv("HOSPITAL_DB_PATH", str(BASE_DIR / "hospital_ecosystem.db"))
+DB_PATH             = AUDIT_DB_PATH  # backward compat for auditor.py
 
 AUTOML_UPLOAD_ROOT  = Path(os.getenv("AUTOML_UPLOAD_ROOT", str(BASE_DIR / "app/storage/uploads")))
 AUTOML_MODEL_ROOT   = Path(os.getenv("AUTOML_MODEL_ROOT",  str(BASE_DIR / "app/storage/models")))
@@ -72,7 +78,6 @@ AUTOML_MAX_MISSING_COL_PCT     = float(os.getenv("AUTOML_MAX_MISSING_COL_PCT", "
 AUTOML_MIN_QUALITY_SCORE       = float(os.getenv("AUTOML_MIN_QUALITY_SCORE", "0.30"))
 
 # ── Legacy enclave ────────────────────────────────────────────────────────────
-DB_PATH             = AUDIT_DB_PATH  # backward compat for auditor.py
 ENCLAVE_TOKEN       = os.getenv("SESSION_SECRET", "SecureToken123")
 ENCLAVE_TYPE        = "sim"
 DEFAULT_LATENCY_MS  = 14.2

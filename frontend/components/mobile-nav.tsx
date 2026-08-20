@@ -25,7 +25,7 @@ export function MobileNav() {
 
   return (
     <div className="fixed top-4 inset-x-0 z-50 flex justify-center px-4 pointer-events-none">
-      <div className="pointer-events-auto w-full max-w-3xl">
+      <div className="pointer-events-auto w-full max-w-6xl">
 
         {/* Main bar */}
         <nav
@@ -44,7 +44,7 @@ export function MobileNav() {
           </Link>
 
           {/* Desktop links */}
-          <div className="hidden md:flex items-center gap-7" style={{ fontFamily: "system-ui, -apple-system, sans-serif" }}>
+          <div className="hidden lg:flex items-center gap-6" style={{ fontFamily: "system-ui, -apple-system, sans-serif" }}>
             {NAV_LINKS.map(l => (
               <a
                 key={l.label}
@@ -59,7 +59,7 @@ export function MobileNav() {
           <div className="flex items-center gap-3">
             <Link 
               href="/sign-up" 
-              className="px-5 sm:px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#0B4F8C] via-[#5B9BD5] to-[#585E62] text-white font-bold text-xs sm:text-sm shadow-md shadow-[#0B4F8C]/25 hover:shadow-lg hover:scale-105 transition-all duration-200 tracking-wide hidden md:flex items-center gap-2" 
+              className="px-5 sm:px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#0B4F8C] via-[#5B9BD5] to-[#585E62] text-white font-bold text-xs sm:text-sm shadow-md shadow-[#0B4F8C]/25 hover:shadow-lg hover:scale-105 transition-all duration-200 tracking-wide hidden lg:flex items-center gap-2" 
               style={{ fontFamily: "system-ui, -apple-system, sans-serif" }}
             >
               <span>✨ Launch Clinical AI</span>
@@ -68,7 +68,7 @@ export function MobileNav() {
             {/* Burger — mobile only */}
             <button
               onClick={() => setOpen(v => !v)}
-              className="md:hidden flex flex-col justify-center items-center w-8 h-8 gap-[5px] rounded-lg hover:bg-black/[0.04] transition-colors"
+              className="lg:hidden flex flex-col justify-center items-center w-8 h-8 gap-[5px] rounded-lg hover:bg-black/[0.04] transition-colors"
               aria-label={open ? "Close menu" : "Open menu"}
             >
               <span
@@ -87,7 +87,7 @@ export function MobileNav() {
 
         {/* Mobile dropdown */}
         <div
-          className={`md:hidden mt-2 overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+          className={`lg:hidden mt-2 overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
             open ? "max-h-[350px] opacity-100" : "max-h-0 opacity-0 pointer-events-none"
           }`}
         >

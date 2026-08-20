@@ -22,7 +22,7 @@ export default function SignUpPage() {
     setLoading(true)
     setError("")
     try {
-      const endpoint = accountType === "individual" ? "/api/doctor/signup" : "/api/hospital/signup"
+      const endpoint = accountType === "individual" ? "http://localhost:8000/api/doctor/signup" : "http://localhost:8000/api/hospital/signup"
       const payload = accountType === "individual"
         ? { full_name: name || "Dr. New User", license_no: identifier || "MED-NEW-001", password: password || "doctor123", email: email || "doc@demo.org", state: stateVal }
         : { hospital_name: name || "New Hospital", reg_no: identifier || "HOSP-NEW-001", password: password || "admin123", email: email || "info@hospital.org", admin_name: adminName || "Admin" }
@@ -34,9 +34,9 @@ export default function SignUpPage() {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.detail || "Registration failed")
-      if (data.status === "registered" || data.token || data.status === "success") {
+      if (data.status === "registered" || data.token || data.status === "success" || data.status === "registered") {
         localStorage.setItem("hospital_ai_session", JSON.stringify(data))
-        window.location.href = accountType === "individual" ? "/dashboard" : "/dashboard-doc"
+        window.location.href = accountType === "individual" ? "/dashboard-doc" : "/dashboard"
       }
     } catch (err: any) {
       setError(err.message || "Sign up failed")
@@ -166,6 +166,17 @@ export default function SignUpPage() {
             </p>
             
             {error && <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-600 rounded-2xl text-sm font-medium">{error}</div>}
+
+            
+            
+            <div className="relative mb-6">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-slate-200"></span>
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-white px-2 text-slate-500 font-medium tracking-wider">Or continue with</span>
+              </div>
+            </div>
 
             <form onSubmit={handleSignup} className="space-y-6">
               
@@ -362,3 +373,9 @@ export default function SignUpPage() {
     </div>
   )
 }
+
+
+
+
+
+

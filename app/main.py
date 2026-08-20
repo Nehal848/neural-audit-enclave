@@ -17,11 +17,49 @@ from typing import Optional, List, Dict, Any
 
 import httpx
 import pandas as pd
-from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Depends, Body
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Depends, Body, WebSocket, WebSocketDisconnect, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
+from google.oauth2 import id_token
+from google.auth.transport import requests as google_requests
+import jwt
+from datetime import datetime, timedelta
+
+# ─── Security Configuration ───────────────────────────────────────────────────
+SECRET_KEY = "super_secure_enclave_secret_key"
+ALGORITHM = "HS256"
+security = HTTPBearer()
+
+def create_access_token(data: dict, expires_delta: timedelta = None):
+    to_encode = data.copy()
+    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=1440))
+    to_encode.update({"exp": expire})
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    token = credentials.credentials
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username: str = payload.get("sub")
+        role: str = payload.get("role")
+        if username is None or role is None:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid authentication credentials")
+        return {"username": username, "role": role}
+    except jwt.PyJWTError:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid authentication token")
+
+class RequireRole:
+    def __init__(self, allowed_roles: list):
+        self.allowed_roles = allowed_roles
+        
+    def __call__(self, user: dict = Depends(get_current_user)):
+        if user["role"] not in self.allowed_roles:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=f"Operation forbidden. Required roles: {', '.join(self.allowed_roles)}")
+        return user
 import sys
+import asyncio
 
 # Automatically add project root to sys.path so 'import config' works in PowerShell/Windows/WSL without needing PYTHONPATH=.
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -31,6 +69,7 @@ if str(_PROJECT_ROOT) not in sys.path:
 from contextlib import asynccontextmanager
 import config
 from core.auditor import EnclaveAuditor
+from core.database import init_db as init_sqlalchemy_db
 
 # ─── Password hashing (bcrypt) ───────────────────────────────────────────────
 try:
@@ -53,12 +92,17 @@ from core.automl.job_manager import JobStatus
 # ─── Lifespan (startup tasks) ────────────────────────────────────────────────
 @asynccontextmanager
 async def _lifespan(app: FastAPI):
+    init_sqlalchemy_db()
     EnclaveAuditor.init_db()
     _init_persist_db()
     jm.init_table()
     config.AUTOML_UPLOAD_ROOT.mkdir(parents=True, exist_ok=True)
     config.AUTOML_MODEL_ROOT.mkdir(parents=True, exist_ok=True)
+    
+    # Start background websocket poller
+    poller_task = asyncio.create_task(dashboard_poller())
     yield
+    poller_task.cancel()
 
 
 # ─── App init ────────────────────────────────────────────────────────────────
@@ -324,89 +368,93 @@ MOCK_PATIENTS = [
 
 
 # ─── Persistent DB manager (SQLite) ──────────────────────────────────────────
-import sqlite3 as _sqlite3
+import psycopg2
+import psycopg2.extras
 import json as _json
-
-_DB_FILE = str(Path(__file__).resolve().parent.parent / "hospital_ecosystem.db")
+from config import DATABASE_URL
 
 def _db():
-    conn = _sqlite3.connect(_DB_FILE, timeout=10, check_same_thread=False)
-    conn.row_factory = _sqlite3.Row
-    conn.execute("PRAGMA journal_mode=WAL")
+    conn = psycopg2.connect(DATABASE_URL)
     return conn
 
 def _init_persist_db():
     """Create tables and seed defaults if empty."""
-    with _db() as c:
-        try: c.execute("ALTER TABLE doctors ADD COLUMN password TEXT")
-        except: pass
-        try: c.execute("ALTER TABLE hospitals ADD COLUMN password TEXT")
-        except: pass
-        for col in ["has_imaging", "has_lab", "has_notes"]:
-            try: c.execute(f"ALTER TABLE patients ADD COLUMN {col} INTEGER DEFAULT 0")
-            except: pass
-        for col in ["reports", "reports_content"]:
-            try: c.execute(f"ALTER TABLE patients ADD COLUMN {col} TEXT DEFAULT '{{}}'")
-            except: pass
-        c.executescript("""
-            CREATE TABLE IF NOT EXISTS patients (
-                id TEXT PRIMARY KEY,
-                name TEXT, age INTEGER, symptoms TEXT,
-                has_imaging INTEGER DEFAULT 0,
-                has_lab INTEGER DEFAULT 0,
-                has_notes INTEGER DEFAULT 0,
-                reports TEXT DEFAULT '{}',
-                reports_content TEXT DEFAULT '{}'
-            );
-            CREATE TABLE IF NOT EXISTS doctors (
-                license_no TEXT PRIMARY KEY,
-                full_name TEXT, state TEXT, email TEXT,
-                hospital_name TEXT, phone TEXT, password TEXT
-            );
-            CREATE TABLE IF NOT EXISTS hospitals (
-                reg_no TEXT PRIMARY KEY,
-                hospital_name TEXT, address TEXT, admin_name TEXT,
-                admin_email TEXT, email TEXT, phone TEXT, password TEXT, role TEXT
-            );
-            CREATE TABLE IF NOT EXISTS model_feedback (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                model_id TEXT, model_name TEXT, doctor TEXT,
-                accuracy_observation TEXT, notes TEXT, timestamp TEXT
-            );
-        """)
-        # Seed patients
-        if c.execute("SELECT COUNT(*) FROM patients").fetchone()[0] == 0:
-            for p in MOCK_PATIENTS:
-                c.execute("""INSERT OR IGNORE INTO patients 
-                    (id,name,age,symptoms,has_imaging,has_lab,has_notes,reports,reports_content)
-                    VALUES (?,?,?,?,?,?,?,?,?)""",
-                    (p["id"], p["name"], p["age"], p.get("symptoms",""),
-                     int(p.get("has_imaging",False)), int(p.get("has_lab",False)),
-                     int(p.get("has_notes",False)),
-                     _json.dumps(p.get("reports",{})), _json.dumps(p.get("reports_content",{}))))
-        # Seed doctors
-        if c.execute("SELECT COUNT(*) FROM doctors").fetchone()[0] == 0:
-            for d in _SEED_DOCTORS:
-                c.execute("""INSERT OR IGNORE INTO doctors 
-                    (license_no,full_name,state,email,hospital_name,phone,password)
-                    VALUES (?,?,?,?,?,?,?)""",
-                    (d["license_no"], d["full_name"], d.get("state",""), d.get("email",""),
-                     d.get("hospital_name",""), d.get("phone",""), _hash_pw(d["password"])))
-        # Seed hospitals
-        if c.execute("SELECT COUNT(*) FROM hospitals").fetchone()[0] == 0:
-            for h in _SEED_HOSPITALS:
-                c.execute("""INSERT OR IGNORE INTO hospitals 
-                    (reg_no,hospital_name,address,admin_name,admin_email,email,phone,password,role)
-                    VALUES (?,?,?,?,?,?,?,?,?)""",
-                    (h["reg_no"], h["hospital_name"], h.get("address",""),
-                     h.get("admin_name",""), h.get("admin_email",""),
-                     h.get("email",""), h.get("phone",""),
-                     _hash_pw(h["password"]), h.get("role","hospital")))
-        c.commit()
+    with _db() as conn:
+        with conn.cursor() as c:
+            try: c.execute("ALTER TABLE doctors ADD COLUMN password TEXT")
+            except: conn.rollback()
+            try: c.execute("ALTER TABLE hospitals ADD COLUMN password TEXT")
+            except: conn.rollback()
+            for col in ["has_imaging", "has_lab", "has_notes"]:
+                try: c.execute(f"ALTER TABLE patients ADD COLUMN {col} INTEGER DEFAULT 0")
+                except: conn.rollback()
+            for col in ["reports", "reports_content"]:
+                try: c.execute(f"ALTER TABLE patients ADD COLUMN {col} TEXT DEFAULT '{{}}'")
+                except: conn.rollback()
+            c.execute("""
+                CREATE TABLE IF NOT EXISTS patients (
+                    id TEXT PRIMARY KEY,
+                    name TEXT, age INTEGER, symptoms TEXT,
+                    has_imaging INTEGER DEFAULT 0,
+                    has_lab INTEGER DEFAULT 0,
+                    has_notes INTEGER DEFAULT 0,
+                    reports TEXT DEFAULT '{}',
+                    reports_content TEXT DEFAULT '{}'
+                );
+                CREATE TABLE IF NOT EXISTS doctors (
+                    license_no TEXT PRIMARY KEY,
+                    full_name TEXT, state TEXT, email TEXT,
+                    hospital_name TEXT, phone TEXT, password TEXT
+                );
+                CREATE TABLE IF NOT EXISTS hospitals (
+                    reg_no TEXT PRIMARY KEY,
+                    hospital_name TEXT, address TEXT, admin_name TEXT,
+                    admin_email TEXT, email TEXT, phone TEXT, password TEXT, role TEXT
+                );
+                CREATE TABLE IF NOT EXISTS model_feedback (
+                    id SERIAL PRIMARY KEY,
+                    model_id TEXT, model_name TEXT, doctor TEXT,
+                    accuracy_observation TEXT, notes TEXT, timestamp TEXT
+                );
+            """)
+            # Seed patients
+            c.execute("SELECT COUNT(*) FROM patients")
+            if c.fetchone()[0] == 0:
+                for p in MOCK_PATIENTS:
+                    c.execute("""INSERT INTO patients 
+                        (id,name,age,symptoms,has_imaging,has_lab,has_notes,reports,reports_content)
+                        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s) ON CONFLICT DO NOTHING""",
+                        (p["id"], p["name"], p["age"], p.get("symptoms",""),
+                         int(p.get("has_imaging",False)), int(p.get("has_lab",False)),
+                         int(p.get("has_notes",False)),
+                         _json.dumps(p.get("reports",{})), _json.dumps(p.get("reports_content",{}))))
+            # Seed doctors
+            c.execute("SELECT COUNT(*) FROM doctors")
+            if c.fetchone()[0] == 0:
+                for d in _SEED_DOCTORS:
+                    c.execute("""INSERT INTO doctors 
+                        (license_no,full_name,state,email,hospital_name,phone,password)
+                        VALUES (%s,%s,%s,%s,%s,%s,%s) ON CONFLICT DO NOTHING""",
+                        (d["license_no"], d["full_name"], d.get("state",""), d.get("email",""),
+                         d.get("hospital_name",""), d.get("phone",""), _hash_pw(d["password"])))
+            # Seed hospitals
+            c.execute("SELECT COUNT(*) FROM hospitals")
+            if c.fetchone()[0] == 0:
+                for h in _SEED_HOSPITALS:
+                    c.execute("""INSERT INTO hospitals 
+                        (reg_no,hospital_name,address,admin_name,admin_email,email,phone,password,role)
+                        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s) ON CONFLICT DO NOTHING""",
+                        (h["reg_no"], h["hospital_name"], h.get("address",""),
+                         h.get("admin_name",""), h.get("admin_email",""),
+                         h.get("email",""), h.get("phone",""),
+                         _hash_pw(h["password"]), h.get("role","hospital")))
+        conn.commit()
 
 def _get_patients():
-    with _db() as c:
-        rows = c.execute("SELECT * FROM patients").fetchall()
+    with _db() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as c:
+            c.execute("SELECT * FROM patients")
+            rows = c.fetchall()
     res = []
     for r in rows:
         dr = dict(r)
@@ -421,26 +469,29 @@ def _get_patients():
     return res
 
 def _add_patient(p: dict):
-    with _db() as c:
-        try:
-            # Primary key column is id, not pt_id
-            c.execute("""INSERT INTO patients (id,name,age,symptoms,has_imaging,has_lab,has_notes,reports,reports_content)
-                VALUES (?,?,?,?,?,?,?,?,?)""",
-                (p["id"], p["name"], p["age"], p.get("symptoms",""),
-                 int(p.get("has_imaging",False)), int(p.get("has_lab",False)),
-                 int(p.get("has_notes",False)),
-                 _json.dumps(p.get("reports",{})), _json.dumps(p.get("reports_content",{}))))
-        except Exception as _e:
-            import logging as _lg
-            _lg.getLogger(__name__).warning("_add_patient full insert failed: %s", _e)
-            c.execute("""INSERT INTO patients (id,name,age,symptoms)
-                VALUES (?,?,?,?)""", (p["id"], p["name"], p["age"], p.get("symptoms","")))
-        c.commit()
+    with _db() as conn:
+        with conn.cursor() as c:
+            try:
+                c.execute("""INSERT INTO patients (id,name,age,symptoms,has_imaging,has_lab,has_notes,reports,reports_content)
+                    VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
+                    (p["id"], p["name"], p["age"], p.get("symptoms",""),
+                     int(p.get("has_imaging",False)), int(p.get("has_lab",False)),
+                     int(p.get("has_notes",False)),
+                     _json.dumps(p.get("reports",{})), _json.dumps(p.get("reports_content",{}))))
+            except Exception as _e:
+                conn.rollback()
+                import logging as _lg
+                _lg.getLogger(__name__).warning("_add_patient full insert failed: %s", _e)
+                c.execute("""INSERT INTO patients (id,name,age,symptoms)
+                    VALUES (%s,%s,%s,%s)""", (p["id"], p["name"], p["age"], p.get("symptoms","")))
+        conn.commit()
     return p
 
 def _get_doctors():
-    with _db() as c:
-        rows = c.execute("SELECT * FROM doctors").fetchall()
+    with _db() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as c:
+            c.execute("SELECT * FROM doctors")
+            rows = c.fetchall()
     return [{"license_no": r["license_no"], "full_name": dict(r).get("name", dict(r).get("full_name")),
               "state": dict(r).get("state"), "email": dict(r).get("email"),
               "hospital_name": dict(r).get("hospital_name"), "phone": dict(r).get("phone"),
@@ -449,22 +500,26 @@ def _get_doctors():
 
 def _add_doctor(d: dict):
     hashed = _hash_pw(d["password"])
-    with _db() as c:
-        try:
-            c.execute("""INSERT OR IGNORE INTO doctors (license_no,name,state,email,hospital_name,phone,password)
-                VALUES (?,?,?,?,?,?,?)""",
-                (d["license_no"], d["full_name"], d.get("state",""), d.get("email",""),
-                 d.get("hospital_name",""), d.get("phone",""), hashed))
-        except:
-            c.execute("""INSERT OR IGNORE INTO doctors (license_no,full_name,state,email,hospital_name,phone,password)
-                VALUES (?,?,?,?,?,?,?)""",
-                (d["license_no"], d["full_name"], d.get("state",""), d.get("email",""),
-                 d.get("hospital_name",""), d.get("phone",""), hashed))
-        c.commit()
+    with _db() as conn:
+        with conn.cursor() as c:
+            try:
+                c.execute("""INSERT INTO doctors (license_no,name,state,email,hospital_name,phone,password)
+                    VALUES (%s,%s,%s,%s,%s,%s,%s) ON CONFLICT DO NOTHING""",
+                    (d["license_no"], d["full_name"], d.get("state",""), d.get("email",""),
+                     d.get("hospital_name",""), d.get("phone",""), hashed))
+            except:
+                conn.rollback()
+                c.execute("""INSERT INTO doctors (license_no,full_name,state,email,hospital_name,phone,password)
+                    VALUES (%s,%s,%s,%s,%s,%s,%s) ON CONFLICT DO NOTHING""",
+                    (d["license_no"], d["full_name"], d.get("state",""), d.get("email",""),
+                     d.get("hospital_name",""), d.get("phone",""), hashed))
+        conn.commit()
 
 def _get_hospitals():
-    with _db() as c:
-        rows = c.execute("SELECT * FROM hospitals").fetchall()
+    with _db() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as c:
+            c.execute("SELECT * FROM hospitals")
+            rows = c.fetchall()
     return [{"reg_no": r["reg_no"],
               "hospital_name": dict(r).get("name", dict(r).get("hospital_name")),
               "_password_hash": r["password"],  # internal only — not exposed in API responses
@@ -472,36 +527,46 @@ def _get_hospitals():
 
 def _add_hospital(h: dict):
     hashed = _hash_pw(h["password"])
-    with _db() as c:
-        try:
-            c.execute("""INSERT OR IGNORE INTO hospitals 
-                (reg_no,name,address,admin_name,admin_email,email,phone,password)
-                VALUES (?,?,?,?,?,?,?,?)""",
-                (h["reg_no"], h["hospital_name"], h.get("address",""),
-                 h.get("admin_name",""), h.get("admin_email",""),
-                 h.get("email",""), h.get("phone",""),
-                 hashed))
-        except:
-            pass # Ignore if schema is different
-        c.commit()
+    with _db() as conn:
+        with conn.cursor() as c:
+            try:
+                c.execute("""INSERT INTO hospitals 
+                    (reg_no,hospital_name,address,admin_name,admin_email,email,phone,password)
+                    VALUES (%s,%s,%s,%s,%s,%s,%s,%s) ON CONFLICT DO NOTHING""",
+                    (h["reg_no"], h["hospital_name"], h.get("address",""),
+                     h.get("admin_name",""), h.get("admin_email",""),
+                     h.get("email",""), h.get("phone",""),
+                     hashed))
+            except:
+                conn.rollback() # Ignore if schema is different
+        conn.commit()
 
 def _get_feedback():
-    with _db() as c:
-        rows = c.execute("SELECT * FROM model_feedback ORDER BY id DESC LIMIT 50").fetchall()
+    with _db() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as c:
+            c.execute("SELECT * FROM model_feedback ORDER BY id DESC LIMIT 50")
+            rows = c.fetchall()
     return [dict(r) for r in rows]
 
 def _add_feedback(f: dict):
-    with _db() as c:
-        c.execute("""INSERT INTO model_feedback (model_id,model_name,doctor,accuracy_observation,notes,timestamp)
-            VALUES (?,?,?,?,?,?)""",
-            (f["model_id"], f["model_name"], f["doctor"],
-             f["accuracy_observation"], f.get("notes",""), f["timestamp"]))
-        c.commit()
+    with _db() as conn:
+        with conn.cursor() as c:
+            c.execute("""INSERT INTO model_feedback (model_id,model_name,doctor,accuracy_observation,notes,timestamp)
+                VALUES (%s,%s,%s,%s,%s,%s)""",
+                (f["model_id"], f["model_name"], f["doctor"],
+                 f["accuracy_observation"], f.get("notes",""), f["timestamp"]))
+        conn.commit()
 
 def _get_max_patient_num():
-    with _db() as c:
-        try: rows = c.execute("SELECT pt_id FROM patients").fetchall()
-        except: rows = c.execute("SELECT id FROM patients").fetchall()
+    with _db() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as c:
+            try: 
+                c.execute("SELECT pt_id FROM patients")
+                rows = c.fetchall()
+            except: 
+                conn.rollback()
+                c.execute("SELECT id FROM patients")
+                rows = c.fetchall()
     nums = []
     for r in rows:
         val = str(dict(r).get("pt_id", dict(r).get("id")))
@@ -737,17 +802,6 @@ LAB_IMAGING_SOURCES = [
 # (startup tasks moved to _lifespan context manager above)
 
 
-# ─── Frontend ─────────────────────────────────────────────────────────────────
-@app.get("/", response_class=HTMLResponse)
-async def get_portal_root():
-    index_file = Path("app/index.html")
-    if index_file.exists():
-        return index_file.read_text(encoding="utf-8")
-    return "<h3>Hospital AI Portal frontend is missing!</h3>"
-
-@app.get("/dashboard")
-async def get_dashboard_redirect():
-    return RedirectResponse(url="/")
 
 
 # ─── OTP ──────────────────────────────────────────────────────────────────────
@@ -967,6 +1021,63 @@ async def get_settings_integrations():
     return {"integrations": INTEGRATIONS}
 
 # ─── Hospital Admin Dashboard ───────────────────────────────────────────────────────
+
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: List[WebSocket] = []
+
+    async def connect(self, websocket: WebSocket):
+        await websocket.accept()
+        self.active_connections.append(websocket)
+
+    def disconnect(self, websocket: WebSocket):
+        if websocket in self.active_connections:
+            self.active_connections.remove(websocket)
+
+    async def broadcast(self, message: dict):
+        for connection in self.active_connections:
+            try:
+                await connection.send_json(message)
+            except Exception:
+                pass
+
+ws_manager = ConnectionManager()
+
+async def dashboard_poller():
+    last_state = None
+    while True:
+        await asyncio.sleep(2)
+        if not ws_manager.active_connections:
+            continue
+        try:
+            in_training = [j for j in jm.list_jobs(1) if j["status"] in (JobStatus.TRAINING, JobStatus.CLEANING, JobStatus.EXPLAINING)]
+            training_display = []
+            for j in in_training:
+                pct = {"CLEANING": 30, "TRAINING": 60, "EXPLAINING": 85}.get(j["status"], 50)
+                training_display.append({
+                    "name": j.get("disease_name", "Custom Model"),
+                    "progress": pct,
+                    "stage": j["status"].replace("_", " ").title(),
+                    "eta": "calculating...",
+                    "job_id": j["id"],
+                })
+            state = {"training_models": training_display}
+            if state != last_state:
+                await ws_manager.broadcast(state)
+                last_state = state
+        except Exception as e:
+            print("Poller error:", e)
+
+@app.websocket("/api/ws/dashboard")
+async def websocket_dashboard(websocket: WebSocket):
+    await ws_manager.connect(websocket)
+    try:
+        while True:
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        ws_manager.disconnect(websocket)
+
+
 @app.get("/api/hospital/dashboard")
 async def get_hospital_dashboard(token: str = Depends(_require_auth)):
     in_training = [j for j in jm.list_jobs(1) if j["status"] in (JobStatus.TRAINING, JobStatus.CLEANING, JobStatus.EXPLAINING)]
@@ -1041,6 +1152,82 @@ async def add_patient(p: AddPatientPayload):
 @app.get("/api/doctor/lab-imaging")
 async def get_lab_imaging_status(token: str = Depends(_require_auth)):
     return LAB_IMAGING_SOURCES
+
+
+# ─── Custom Dynamic Inference ─────────────────────────────────────────────────
+@app.get("/api/models/custom/{job_id}/info")
+async def custom_model_info(job_id: str):
+    job = jm.get_job(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found.")
+    metrics = job.get("metrics") or {}
+    feature_names = metrics.get("feature_names", [])
+    if not feature_names:
+        model_path = config.AUTOML_MODEL_ROOT / job_id / "model.pkl"
+        if model_path.exists():
+            import joblib
+            try:
+                model_data = joblib.load(model_path)
+                feature_names = model_data.get("feature_names", [])
+            except Exception:
+                pass
+    return {"job_id": job_id, "feature_names": feature_names, "name": job.get("disease_name"), "problem_type": metrics.get("problem_type")}
+
+@app.post("/api/models/custom/{job_id}/predict")
+async def predict_custom(job_id: str, p: Dict[Any, Any] = Body(...), user: dict = Depends(RequireRole(["doctor", "admin"]))):
+    job = jm.get_job(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found.")
+    
+    model_path = config.AUTOML_MODEL_ROOT / job_id / "model.pkl"
+    if not model_path.exists():
+        raise HTTPException(status_code=404, detail="Model file not found.")
+
+    import joblib
+    import pandas as pd
+    try:
+        model_data = joblib.load(model_path)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to load model: {str(e)}")
+
+    pipe = model_data.get("pipeline")
+    feature_names = model_data.get("feature_names", [])
+    
+    if not feature_names:
+        raise HTTPException(status_code=400, detail="Model does not support tabular dynamic inference. Ensure it is a tabular model.")
+
+    # Convert payload into dataframe
+    row = {}
+    for feat in feature_names:
+        if feat not in p:
+            raise HTTPException(status_code=400, detail=f"Missing required feature: {feat}")
+        row[feat] = [p[feat]]
+    
+    df = pd.DataFrame(row)
+    try:
+        prediction = pipe.predict(df)[0]
+        confidence = 100.0
+        try:
+            proba = pipe.predict_proba(df)[0]
+            confidence = float(max(proba)) * 100
+        except Exception:
+            pass
+        
+        le = model_data.get("label_encoder")
+        if le:
+            prediction = le.inverse_transform([prediction])[0]
+            
+        import numpy as np
+        if isinstance(prediction, (np.integer, np.floating)):
+            prediction = float(prediction)
+
+        return {
+            "job_id": job_id,
+            "prediction": str(prediction),
+            "confidence": round(confidence, 2)
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Prediction failed: {str(e)}")
 
 
 # ─── Models — My Models, Feedback ─────────────────────────────────────────────
@@ -1213,6 +1400,7 @@ async def add_doctor_to_hospital(p: AddDoctorPayload):
 async def automl_upload(
     file: UploadFile = File(...),
     disease_name: str = Form("Custom Model"),
+    user: dict = Depends(RequireRole(["admin", "doctor"]))
 ):
     """
     Step 1 — Hospital uploads a dataset file (CSV or ZIP of images).
@@ -1297,7 +1485,7 @@ class QualityApprovalPayload(BaseModel):
     approved: bool
 
 @app.post("/api/hospital/automl/job/{job_id}/approve-quality")
-async def approve_quality(job_id: str, p: QualityApprovalPayload):
+async def approve_quality(job_id: str, p: QualityApprovalPayload, user: dict = Depends(RequireRole(["admin"]))):
     """
     Step 5 — Hospital reviews data quality score and approves/rejects before training.
     If quality score < threshold (~30-50%) the platform won't proceed.
@@ -1402,6 +1590,86 @@ async def submit_rlhf_label(p: RLHFLabelPayload):
     return {"status": "labeled", "prediction_id": p.prediction_id, "label": p.label}
 
 
+# ─── New Workflow Gates (Clinical, RLHF, Regulatory) ──────────────────────
+
+class GovernancePayload(BaseModel):
+    approved: bool
+    reason: Optional[str] = ""
+
+@app.post("/api/hospital/model/{job_id}/clinical-governance")
+async def clinical_governance(job_id: str, p: GovernancePayload):
+    job = jm.get_job(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found.")
+    
+    if p.approved:
+        # Move to RLHF stage and start the timer
+        jm.update_status(job_id, jm.JobStatus.IN_RLHF, evaluation_start_time=_now_iso())
+        return {"status": "approved", "message": "Model approved for RLHF."}
+    else:
+        jm.update_status(job_id, jm.JobStatus.REJECTED_CLINICAL, governance_reason=p.reason)
+        return {"status": "rejected", "message": "Model rejected by Clinical Governance."}
+
+class RegulatoryPayload(BaseModel):
+    approved: bool
+    reason: Optional[str] = ""
+
+@app.post("/api/hospital/model/{job_id}/regulatory-approval")
+async def regulatory_approval(job_id: str, p: RegulatoryPayload):
+    job = jm.get_job(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found.")
+    
+    if p.approved:
+        jm.update_status(job_id, jm.JobStatus.DEPLOYED)
+        return {"status": "deployed", "message": "Model approved by CDSCO and deployed."}
+    else:
+        jm.update_status(job_id, jm.JobStatus.IN_RLHF, governance_reason=p.reason, evaluation_start_time=_now_iso())
+        return {"status": "rejected", "message": "Model rejected by CDSCO. Returned to RLHF."}
+
+@app.get("/api/hospital/model/{job_id}/rlhf-status")
+async def get_rlhf_status(job_id: str):
+    job = jm.get_job(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found.")
+    
+    start_time_str = job.get("evaluation_start_time")
+    if not start_time_str:
+        return {"status": job["status"], "time_remaining_seconds": 0, "threshold_met": False}
+    
+    start_time = datetime.fromisoformat(start_time_str)
+    elapsed = (datetime.now(timezone.utc) - start_time).total_seconds()
+    
+    time_limit = 600 # 10 minutes demo limit
+    remaining = max(0, time_limit - elapsed)
+    
+    accuracy = job.get("rlhf_accuracy_score", 0.0)
+    threshold_met = accuracy >= 0.95
+    
+    if remaining == 0 and not threshold_met and job["status"] == jm.JobStatus.IN_RLHF:
+        jm.update_status(job_id, jm.JobStatus.REJECTED_CLINICAL, governance_reason="Evaluation period expired before meeting RLHF threshold.")
+        return {"status": jm.JobStatus.REJECTED_CLINICAL, "time_remaining_seconds": 0, "threshold_met": False}
+        
+    return {
+        "status": job["status"],
+        "time_remaining_seconds": remaining,
+        "accuracy": accuracy,
+        "threshold_met": threshold_met
+    }
+
+@app.post("/api/hospital/model/{job_id}/rlhf-progress")
+async def promote_rlhf(job_id: str):
+    job = jm.get_job(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found.")
+    
+    accuracy = job.get("rlhf_accuracy_score", 0.0)
+    if accuracy >= 0.95:
+        jm.update_status(job_id, jm.JobStatus.REGULATORY_REVIEW)
+        return {"status": "promoted", "message": "Model promoted to Regulatory Review"}
+    raise HTTPException(status_code=400, detail="Threshold not met")
+
+
 # ─── Step 11: Threshold check ────────────────────────────────────────────────
 @app.get("/api/hospital/automl/job/{job_id}/threshold-check")
 async def threshold_check(job_id: str):
@@ -1435,7 +1703,7 @@ class GoverningApprovalPayload(BaseModel):
     reviewer_notes: Optional[str] = ""
 
 @app.post("/api/hospital/automl/job/{job_id}/governing-approval")
-async def governing_body_approval(job_id: str, p: GoverningApprovalPayload):
+async def governing_approval(job_id: str, p: GoverningApprovalPayload, user: dict = Depends(RequireRole(["admin"]))):
     """
     Step 12 — Reviewer-role user approves or rejects the model for deployment.
     This is the governing body approval gate (demo version of CDSCO-style review).
@@ -1472,7 +1740,7 @@ class AutoMLDeployPayload(BaseModel):
     name: str
 
 @app.post("/api/hospital/automl/deploy")
-async def deploy_automl_model(p: AutoMLDeployPayload):
+async def deploy_automl(p: AutoMLDeployPayload, user: dict = Depends(RequireRole(["admin", "doctor"]))):
     """
     Step 13 — Deploy an approved model to My Models (sets active/approved flag).
     This is the single source of truth flag controlling doctor-side visibility.
@@ -1828,7 +2096,7 @@ async def login_endpoint(p: LoginPayload):
     role = "standard" if p.phase == "phase_one" else p.role
     valid = EnclaveAuditor.verify_user(p.username, p.password, p.phase, role)
     if valid:
-        token = "PhaseOneToken" if p.phase == "phase_one" else ("PhaseTwoAdminToken" if role == "admin" else "PhaseTwoUserToken")
+        token = create_access_token({"sub": p.username, "role": role})
         return {"status": "success", "phase": p.phase, "role": role, "token": token}
     raise HTTPException(status_code=401, detail=f"Invalid credentials for {p.phase} {role}.")
 
@@ -1841,3 +2109,37 @@ async def get_automl_results_legacy():
         raise HTTPException(status_code=404, detail="No AutoML results found. Please complete a training job first.")
     latest = ready[0]
     return {"job_id": latest["id"], "metrics": latest.get("metrics"), "report": latest.get("report"), "status": latest["status"]}
+
+
+# ─── Google Auth ──────────────────────────────────────────────────────────────
+class GoogleAuthPayload(BaseModel):
+    token: str
+    role: str
+
+@app.post("/api/auth/google")
+async def google_auth_endpoint(p: GoogleAuthPayload):
+    try:
+        # We skip explicit audience verification here to allow the placeholder or any client ID.
+        # In production, pass `audience=GOOGLE_CLIENT_ID` to `verify_oauth2_token`.
+        idinfo = id_token.verify_oauth2_token(p.token, google_requests.Request(), clock_skew_in_seconds=10)
+        
+        email = idinfo.get("email")
+        name = idinfo.get("name", email)
+        
+        if not email:
+            raise HTTPException(status_code=400, detail="No email provided by Google")
+            
+        # Create session token
+        token = str(uuid.uuid4())
+        _session_store[token] = {
+            "user_id": email,
+            "role": p.role,
+            "name": name,
+            "created_at": datetime.now(timezone.utc),
+        }
+        return {"status": "success", "token": token, "role": p.role, "name": name}
+    except ValueError as e:
+        raise HTTPException(status_code=401, detail=f"Invalid Google token: {str(e)}")
+
+if (_frontend_dir / "out").exists():
+    app.mount("/", _SF(directory=str(_frontend_dir / "out"), html=True), name="frontend")

@@ -1,0 +1,58 @@
+# Implement Google Authentication
+
+Add "Sign in with Google" to the application to allow doctors and hospital admins to authenticate seamlessly.
+
+## User Review Required
+
+> [!IMPORTANT]
+> To fully test and use Google Authentication, you will need a **Google Client ID**.
+> You can obtain this from the [Google Cloud Console](https://console.cloud.google.com/) by creating an OAuth 2.0 Client ID for a Web Application.
+> 
+> You will need to add this Client ID to your `.env` file once we implement the feature.
+
+## Open Questions
+
+> [!WARNING]
+> 1. Do you already have a `NEXT_PUBLIC_GOOGLE_CLIENT_ID` ready, or should I proceed with a placeholder that you can swap out later?
+> 2. Should a successful Google login automatically create a new account if the user doesn't exist, or should it only allow sign-in for pre-registered users? (I will assume automatic registration unless otherwise specified).
+
+## Proposed Changes
+
+### Frontend (Next.js)
+
+#### [MODIFY] [frontend/package.json](file:///C:/Users/nehal/.gemini/antigravity-ide/brain/f2aaa794-a7de-47f7-8f73-bf4a98a8b269/scratch/frontend/package.json)
+- Add `@react-oauth/google` dependency.
+
+#### [NEW] `frontend/components/google-auth-button.tsx`
+- Create a reusable Google Sign-In button component that wraps the `@react-oauth/google` provider.
+- Implement the `onSuccess` callback to send the received Google JWT to the FastAPI backend.
+
+#### [MODIFY] [frontend/app/login/page.tsx](file:///C:/Users/nehal/.gemini/antigravity-ide/brain/f2aaa794-a7de-47f7-8f73-bf4a98a8b269/scratch/frontend/app/login/page.tsx)
+- Add the `GoogleAuthButton` above the standard username/password form with an "Or continue with" divider.
+
+#### [MODIFY] [frontend/app/sign-up/page.tsx](file:///C:/Users/nehal/.gemini/antigravity-ide/brain/f2aaa794-a7de-47f7-8f73-bf4a98a8b269/scratch/frontend/app/sign-up/page.tsx)
+- Add the `GoogleAuthButton` to the registration page for easy onboarding.
+
+---
+
+### Backend (FastAPI)
+
+#### [MODIFY] [requirements.txt](file:///C:/Users/nehal/.gemini/antigravity-ide/brain/f2aaa794-a7de-47f7-8f73-bf4a98a8b269/scratch/requirements.txt)
+- Add `google-auth` and `requests` for verifying Google ID tokens.
+
+#### [MODIFY] [app/main.py](file:///C:/Users/nehal/.gemini/antigravity-ide/brain/f2aaa794-a7de-47f7-8f73-bf4a98a8b269/scratch/app/main.py)
+- Import `from google.oauth2 import id_token` and `from google.auth.transport import requests`.
+- Add a new endpoint `POST /api/auth/google`.
+- The endpoint will:
+  1. Receive the Google ID token and the requested `role` (doctor/hospital).
+  2. Verify the token signature and audience against the Google Client ID.
+  3. Extract the user's `email`, `name`, and `picture`.
+  4. Create a new session in `_session_store` and return the session token to the frontend.
+
+## Verification Plan
+
+### Automated Tests
+- I will write a Python test script (`test_google_auth.py`) that mocks the token verification flow to ensure the backend logic correctly issues sessions when a valid token payload is simulated.
+
+### Manual Verification
+- You will need to click "Sign in with Google" on the UI, select your Google account, and ensure you are correctly routed to the dashboard with an active session.

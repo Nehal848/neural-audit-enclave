@@ -4,8 +4,7 @@ import React, { useState, useEffect } from "react"
 import DocLayout from "@/components/doc-layout"
 import { 
   CheckCircle2, XCircle, HelpCircle, Activity, 
-  ShieldCheck, Loader2, AlertTriangle, ArrowRight,
-  Database, UserCheck
+  ShieldCheck, Loader2, AlertTriangle, Clock, FastForward
 } from "lucide-react"
 
 export default function ReviewPanelPage() {
@@ -16,10 +15,20 @@ export default function ReviewPanelPage() {
   
   // Job ID for threshold/approval testing
   const [testJobId, setTestJobId] = useState<string>("")
-  const [thresholdStatus, setThresholdStatus] = useState<any>(null)
+  const [rlhfStatus, setRlhfStatus] = useState<any>(null)
+  const [isPromoting, setIsPromoting] = useState(false)
+
+  const getAuthHeaders = () => {
+    const headers: any = { "Content-Type": "application/json" };
+    try {
+      const session = JSON.parse(localStorage.getItem("hospital_ai_session") || "{}");
+      if (session.token) headers["Authorization"] = `Bearer ${session.token}`;
+    } catch (e) {}
+    return headers;
+  }
 
   const fetchQueue = () => {
-    fetch("/api/hospital/rlhf/queue")
+    fetch("/api/hospital/rlhf/queue", { headers: getAuthHeaders() })
       .then(res => res.json())
       .then(data => {
         setQueue(data.queue)
@@ -38,10 +47,14 @@ export default function ReviewPanelPage() {
     try {
       await fetch("/api/hospital/rlhf/label", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ prediction_id: predId, label, score })
       })
       fetchQueue()
+      // If we're tracking a specific job, refresh its status
+      if (testJobId) {
+        handleCheckStatus()
+      }
     } catch(e) {
       console.error(e)
     } finally {
@@ -49,34 +62,45 @@ export default function ReviewPanelPage() {
     }
   }
 
-  const handleCheckThreshold = async () => {
+  const handleCheckStatus = async () => {
     if(!testJobId) return
     try {
-      const res = await fetch(`/api/hospital/automl/job/${testJobId}/threshold-check`)
+      const res = await fetch(`/api/hospital/model/${testJobId}/rlhf-status`, { headers: getAuthHeaders() })
       const data = await res.json()
-      setThresholdStatus(data)
+      setRlhfStatus(data)
     } catch (e) {
       console.error(e)
     }
   }
 
-  const handleApprove = async () => {
+  const handlePromote = async () => {
     if(!testJobId) return
+    setIsPromoting(true)
     try {
-      const res = await fetch(`/api/hospital/automl/job/${testJobId}/governing-approval`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ approved: true, reviewer_notes: "Approved via Review Panel" })
+      const res = await fetch(`/api/hospital/model/${testJobId}/rlhf-progress`, {
+        method: "POST", headers: getAuthHeaders()
       })
-      if(res.ok) alert("Model Approved & Deployed successfully!")
-      else { const d = await res.json(); alert(d.detail) }
-    } catch (e) { console.error(e) }
+      const data = await res.json()
+      if(res.ok) alert("Model Promoted to Regulatory Review successfully!")
+      else alert(data.detail || "Failed to promote model")
+      handleCheckStatus()
+    } catch (e) { 
+      console.error(e) 
+    } finally {
+      setIsPromoting(false)
+    }
+  }
+
+  const formatTime = (seconds: number) => {
+    const m = Math.floor(seconds / 60)
+    const s = Math.floor(seconds % 60)
+    return `${m}:${s.toString().padStart(2, '0')}`
   }
 
   return (
     <DocLayout 
-      title="Review Panel" 
-      subtitle="Shadow Mode RLHF & Governing Body Approvals"
+      title="Review Panel (RLHF)" 
+      subtitle="Shadow Mode RLHF & Threshold Tracking"
       searchPlaceholder="Search predictions..."
     >
       <div className="flex-1 overflow-y-auto px-8 pb-8 flex flex-col gap-6 custom-scrollbar">
@@ -99,9 +123,9 @@ export default function ReviewPanelPage() {
               <ShieldCheck size={24} strokeWidth={1.5} />
             </div>
             <div>
-              <div className="text-[12px] font-bold text-slate-700 mb-0.5">Governing Body</div>
-              <div className="text-[26px] font-bold text-slate-900 leading-none mb-1">Gate</div>
-              <div className="text-[11px] font-medium text-slate-500">Threshold enforcement</div>
+              <div className="text-[12px] font-bold text-slate-700 mb-0.5">Threshold Tracking</div>
+              <div className="text-[26px] font-bold text-slate-900 leading-none mb-1">Active</div>
+              <div className="text-[11px] font-medium text-slate-500">Monitor model progress</div>
             </div>
           </div>
         </div>
@@ -171,69 +195,87 @@ export default function ReviewPanelPage() {
             )}
           </div>
 
-          {/* GOVERNING APPROVAL */}
+          {/* RLHF STATUS & TIMER */}
           <div className="bg-white rounded-3xl p-6 shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-slate-100">
             <div className="mb-6">
-               <h3 className="text-[18px] font-bold text-slate-900 mb-1">Governing Body Approval</h3>
-               <p className="text-[13px] font-medium text-slate-500">Check model thresholds and issue final deployment license</p>
+               <h3 className="text-[18px] font-bold text-slate-900 mb-1">RLHF Progress Tracking</h3>
+               <p className="text-[13px] font-medium text-slate-500">Monitor time limit and accuracy threshold</p>
             </div>
 
             <div className="mb-4">
                <input 
                  type="text" 
-                 placeholder="Enter Job ID to evaluate..."
+                 placeholder="Enter Job ID to track..."
                  value={testJobId}
                  onChange={e => setTestJobId(e.target.value)}
                  className="w-full border border-slate-200 rounded-xl px-4 py-3 text-[13px] focus:border-blue-500 outline-none mb-3"
                />
                <button 
-                 onClick={handleCheckThreshold}
+                 onClick={handleCheckStatus}
                  disabled={!testJobId}
                  className="w-full bg-slate-800 text-white py-2.5 rounded-xl text-[12px] font-bold hover:bg-slate-900 transition-colors disabled:opacity-50"
                >
-                 Run Threshold Check
+                 Check RLHF Status
                </button>
             </div>
 
-            {thresholdStatus && (
-              <div className={`mt-6 rounded-2xl p-5 border ${thresholdStatus.eligible_for_governing_body_approval ? 'bg-emerald-50 border-emerald-100' : 'bg-rose-50 border-rose-100'}`}>
-                <div className="flex items-center gap-3 mb-4">
-                  {thresholdStatus.eligible_for_governing_body_approval ? (
-                    <ShieldCheck size={24} className="text-emerald-600" />
-                  ) : (
-                    <AlertTriangle size={24} className="text-rose-500" />
-                  )}
-                  <h4 className={`text-[14px] font-bold ${thresholdStatus.eligible_for_governing_body_approval ? 'text-emerald-800' : 'text-rose-800'}`}>
-                    {thresholdStatus.eligible_for_governing_body_approval ? "Eligible for Approval" : "Threshold Not Met"}
-                  </h4>
-                </div>
+            {rlhfStatus && (
+              <div className={`mt-6 rounded-2xl p-5 border ${rlhfStatus.threshold_met ? 'bg-emerald-50 border-emerald-100' : 'bg-blue-50 border-blue-100'}`}>
                 
-                <div className="space-y-2 mb-5">
-                  <div className="flex justify-between text-[12px] font-medium text-slate-600">
-                    <span>Base Accuracy:</span>
-                    <span className="font-bold text-slate-900">{(thresholdStatus.model_accuracy * 100).toFixed(1)}%</span>
+                {rlhfStatus.status === 'REJECTED_CLINICAL' ? (
+                  <div className="flex flex-col items-center justify-center p-4">
+                     <AlertTriangle size={32} className="text-rose-500 mb-3" />
+                     <h4 className="text-[15px] font-bold text-rose-800 text-center">RLHF Failed</h4>
+                     <p className="text-[12px] text-rose-600 font-medium text-center mt-2">The evaluation period expired before the threshold was met. Model rejected.</p>
                   </div>
-                  <div className="flex justify-between text-[12px] font-medium text-slate-600">
-                    <span>Target Threshold:</span>
-                    <span className="font-bold text-slate-900">{(thresholdStatus.threshold * 100).toFixed(1)}%</span>
-                  </div>
-                  <div className="flex justify-between text-[12px] font-medium text-slate-600">
-                    <span>Shadow Cases Reviewed:</span>
-                    <span className="font-bold text-slate-900">{thresholdStatus.shadow_reviewed_cases} / {thresholdStatus.min_sample_size}</span>
-                  </div>
-                </div>
+                ) : (
+                  <>
+                    <div className="flex items-center gap-3 mb-6">
+                      <Clock size={24} className={rlhfStatus.time_remaining_seconds < 120 ? "text-rose-500 animate-pulse" : "text-blue-600"} />
+                      <div>
+                        <h4 className={`text-[15px] font-bold ${rlhfStatus.time_remaining_seconds < 120 ? "text-rose-600" : "text-blue-800"}`}>
+                          Time Remaining
+                        </h4>
+                        <div className={`text-2xl font-black font-mono ${rlhfStatus.time_remaining_seconds < 120 ? "text-rose-600" : "text-blue-700"}`}>
+                          {formatTime(rlhfStatus.time_remaining_seconds)}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-4 mb-6">
+                      <div>
+                        <div className="flex justify-between text-[12px] font-bold text-slate-700 mb-2">
+                          <span>RLHF Accuracy Target (95%)</span>
+                          <span>{(rlhfStatus.accuracy * 100).toFixed(1)}%</span>
+                        </div>
+                        <div className="w-full bg-white rounded-full h-3 border border-slate-200 overflow-hidden">
+                          <div 
+                            className={`h-full rounded-full transition-all duration-500 ${rlhfStatus.threshold_met ? 'bg-emerald-500' : 'bg-blue-500'}`} 
+                            style={{ width: `${Math.min(100, (rlhfStatus.accuracy / 0.95) * 100)}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    </div>
 
-                {!thresholdStatus.eligible_for_governing_body_approval && (
-                  <p className="text-[11px] text-rose-600 font-medium">{thresholdStatus.reason}</p>
-                )}
-
-                {thresholdStatus.eligible_for_governing_body_approval && (
-                  <button 
-                    onClick={handleApprove}
-                    className="w-full bg-emerald-600 text-white py-2.5 rounded-xl text-[12px] font-bold hover:bg-emerald-700 transition-colors shadow-sm flex justify-center items-center gap-2"
-                  >
-                    <UserCheck size={16} /> Finalize CDSCO-Style Approval
-                  </button>
+                    {rlhfStatus.threshold_met && rlhfStatus.status === 'IN_RLHF' ? (
+                      <button 
+                        onClick={handlePromote}
+                        disabled={isPromoting}
+                        className="w-full bg-emerald-600 text-white py-3 rounded-xl text-[13px] font-bold hover:bg-emerald-700 transition-colors shadow-sm flex justify-center items-center gap-2"
+                      >
+                        {isPromoting ? <Loader2 size={18} className="animate-spin" /> : <FastForward size={18} />}
+                        Promote to Regulatory Review
+                      </button>
+                    ) : rlhfStatus.status === 'REGULATORY_REVIEW' ? (
+                      <div className="bg-emerald-100 text-emerald-800 p-3 rounded-xl text-center text-xs font-bold flex items-center justify-center gap-2 border border-emerald-200">
+                        <CheckCircle2 size={16} /> Already Promoted to CDSCO Gate
+                      </div>
+                    ) : (
+                      <div className="bg-white/50 text-slate-500 p-3 rounded-xl text-center text-xs font-semibold border border-slate-200">
+                        Threshold not yet met. Continue RLHF labels.
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             )}

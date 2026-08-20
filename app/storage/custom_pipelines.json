@@ -165,5 +165,15 @@
     "status": "Active",
     "deployed_at": "2026-07-18T05:48:35.994839+00:00",
     "data_type": "tabular"
+  },
+  {
+    "id": "630f36bd-f713-4cfc-ada7-7899c096b63d",
+    "name": "Cardiac Risk AI v1.0",
+    "accuracy": 94.95,
+    "version": "v1.0.0",
+    "ownership": "Hospital",
+    "status": "Active",
+    "deployed_at": "2026-08-15T17:04:32.312802+00:00",
+    "data_type": "tabular"
   }
 ]

@@ -2,6 +2,7 @@
 
 import React, { useState } from "react"
 import Link from "next/link"
+import { GoogleAuthButton } from "@/components/google-auth-button"
 import { User, BadgeInfo, Lock, EyeOff, Building2, ArrowRight, HelpCircle, Mail, CheckCircle2 } from "lucide-react"
 
 export default function LoginPage() {
@@ -14,12 +15,36 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
 
+  
+  async function handleGoogleSuccess(token: string) {
+    setLoading(true)
+    setError("")
+    try {
+      const res = await fetch("/api/auth/google", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, role: accountType === "individual" ? "doctor" : "hospital" })
+      })
+      const data = await res.json()
+      if (res.ok) {
+        localStorage.setItem("session_token", data.token)
+        window.location.href = accountType === "individual" ? "/dashboard-doc" : "/dashboard"
+      } else {
+        setError(data.detail || "Google Login failed")
+      }
+    } catch (err) {
+      setError("Network error.")
+    } finally {
+      setLoading(false)
+    }
+  }
+
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
     setError("")
     try {
-      const endpoint = accountType === "individual" ? "/api/doctor/login" : "/api/hospital/login"
+      const endpoint = accountType === "individual" ? "http://localhost:8000/api/doctor/login" : "http://localhost:8000/api/hospital/login"
       const payload = accountType === "individual"
         ? { license_no: identifier || "MED-98765-IN", password: password || "doctor" }
         : { reg_no: identifier || "HOSP-MH-001", password: password || "admin" }
@@ -32,7 +57,7 @@ export default function LoginPage() {
       if (!res.ok) throw new Error(data.detail || "Authentication failed")
       if (data.token) {
         localStorage.setItem("hospital_ai_session", JSON.stringify(data))
-        window.location.href = accountType === "individual" ? "/dashboard" : "/dashboard-doc"
+        window.location.href = accountType === "individual" ? "/dashboard-doc" : "/dashboard"
       }
     } catch (err: any) {
       setError(err.message || "Sign in failed")
@@ -156,6 +181,17 @@ export default function LoginPage() {
             
             {error && <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-600 rounded-2xl text-sm font-medium">{error}</div>}
 
+            
+            <div className="mb-6">
+              <GoogleAuthButton 
+                role={accountType === "individual" ? "doctor" : "hospital"} 
+                onSuccess={handleGoogleSuccess} 
+                onError={(err) => setError(err)} 
+              />
+            </div>
+            
+
+
             <form onSubmit={handleLogin} className="space-y-6">
               
               {accountType === "individual" ? (
@@ -278,3 +314,8 @@ export default function LoginPage() {
     </div>
   )
 }
+
+
+
+
+

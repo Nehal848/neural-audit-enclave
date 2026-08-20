@@ -128,7 +128,9 @@ export default function ElvonPage() {
 
 
         {/* Progressive blur + light gradient rising from bottom */}
-        <div className="absolute inset-x-0 bottom-0 z-10 pointer-events-none" style={{ height: "65%", background: "linear-gradient(to top, #F3F6FA 0%, #F3F6FA 18%, rgba(243,246,250,0.85) 35%, rgba(243,246,250,0.5) 55%, rgba(243,246,250,0.15) 75%, transparent 100%)" }} />
+        <div className="absolute inset-x-0 bottom-0 z-10 pointer-events-none" style={{ height: "65%", background: "linear-gradient(to top, #e0ebf9 0%, #e0ebf9 18%, rgba(224,235,249,0.85) 35%, rgba(224,235,249,0.5) 55%, rgba(224,235,249,0.15) 75%, transparent 100%)" }} />
+        {/* Light blue overlay over the whole page for better contrast and aesthetics */}
+        <div className="absolute inset-0 z-10 pointer-events-none" style={{ background: "linear-gradient(to bottom right, rgba(200,225,255,0.15) 0%, rgba(255,255,255,0) 100%)" }} />
         {/* Backdrop blur layers — progressively lighter toward top */}
         <div className="absolute inset-x-0 bottom-0 z-10 pointer-events-none" style={{ height: "20%", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", maskImage: "linear-gradient(to top, black 0%, transparent 100%)", WebkitMaskImage: "linear-gradient(to top, black 0%, transparent 100%)" }} />
         <div className="absolute inset-x-0 bottom-0 z-10 pointer-events-none" style={{ height: "38%", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)", maskImage: "linear-gradient(to top, black 0%, transparent 100%)", WebkitMaskImage: "linear-gradient(to top, black 0%, transparent 100%)" }} />
@@ -138,9 +140,9 @@ export default function ElvonPage() {
         <div className="relative z-30 flex flex-col px-6 md:px-12 pb-12 pt-32 max-w-3xl">
           {/* Title */}
           <h1
-            className="text-5xl sm:text-7xl md:text-8xl font-light text-[#111] leading-tight tracking-tight mb-6"
+            className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-bold leading-tight tracking-tight mb-6 text-transparent bg-clip-text bg-gradient-to-r from-slate-900 via-blue-900 to-slate-800 drop-shadow-sm"
             style={{
-              fontFamily: '"IBM Plex Sans", sans-serif',
+              fontFamily: '"Inter", "Outfit", system-ui, sans-serif',
               opacity: heroReady ? 1 : 0,
               filter: heroReady ? "blur(0px)" : "blur(24px)",
               transform: heroReady ? "translateY(0px)" : "translateY(32px)",
@@ -152,9 +154,9 @@ export default function ElvonPage() {
 
           {/* Description */}
           <p
-            className="text-lg sm:text-xl text-black/60 font-light leading-relaxed mb-10 max-w-2xl"
+            className="text-base sm:text-lg md:text-xl text-slate-700 font-medium leading-relaxed mb-10 max-w-2xl drop-shadow-sm"
             style={{
-              fontFamily: '"IBM Plex Sans", sans-serif',
+              fontFamily: '"Inter", "Outfit", system-ui, sans-serif',
               opacity: heroReady ? 1 : 0,
               filter: heroReady ? "blur(0px)" : "blur(20px)",
               transform: heroReady ? "translateY(0px)" : "translateY(24px)",
@@ -209,8 +211,8 @@ export default function ElvonPage() {
                   transition: `opacity 0.8s cubic-bezier(0.16,1,0.3,1) ${220 + i * 80}ms, filter 0.8s cubic-bezier(0.16,1,0.3,1) ${220 + i * 80}ms, transform 0.8s cubic-bezier(0.16,1,0.3,1) ${220 + i * 80}ms`,
                 }}
               >
-                <div className="text-3xl sm:text-4xl text-[#111] font-light tracking-tight" style={{ fontFamily: '"IBM Plex Sans", sans-serif' }}>{stat.value}</div>
-                <div className="text-xs text-black/40 tracking-widest uppercase mt-1" style={{ fontFamily: '"IBM Plex Sans", sans-serif' }}>{stat.label}</div>
+                <div className="text-3xl sm:text-4xl text-[#111] font-light tracking-tight" style={{ fontFamily: '"Inter", "Outfit", system-ui, sans-serif' }}>{stat.value}</div>
+                <div className="text-xs text-black/40 tracking-widest uppercase mt-1" style={{ fontFamily: '"Inter", "Outfit", system-ui, sans-serif' }}>{stat.label}</div>
               </div>
             ))}
           </div>
@@ -322,7 +324,7 @@ export default function ElvonPage() {
             <RevealText className="mt-5 text-4xl md:text-5xl font-light tracking-tight leading-tight">
               {"From Deployment to\nClinical Intelligence"}
             </RevealText>
-            <div className="mt-4 text-xl font-light text-black/50" style={{ fontFamily: '"IBM Plex Sans", sans-serif' }}>
+            <div className="mt-4 text-xl font-light text-black/50" style={{ fontFamily: '"Inter", "Outfit", system-ui, sans-serif' }}>
               Phase 1 - Licensed AI Models
             </div>
           </div>
@@ -361,7 +363,7 @@ export default function ElvonPage() {
           </div>
 
           <div className="mt-24 mb-16">
-            <div className="text-xl font-light text-black/50" style={{ fontFamily: '"IBM Plex Sans", sans-serif' }}>
+            <div className="text-xl font-light text-black/50" style={{ fontFamily: '"Inter", "Outfit", system-ui, sans-serif' }}>
               Phase 2 - Hospital AutoML Platform
             </div>
           </div>

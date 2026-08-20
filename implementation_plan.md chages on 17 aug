@@ -1,0 +1,40 @@
+# Goal Description
+
+The backend currently redirects users to `http://localhost:3000` or serves the old UI (`app/index.html`). The goal is to completely remove the old UI and have the backend (FastAPI on port 8000) directly serve the **new compiled Next.js frontend**. This means when you run the backend, you'll immediately see the new UI without needing a separate frontend server.
+
+## User Review Required
+
+> [!WARNING]
+> We will configure Next.js to export static files (`output: "export"`). Since Next.js static exports cannot use `rewrites()`, we'll remove the proxy rules in `next.config.mjs`. This is fine because the frontend will be served from the *same port* (8000) as the backend, so API calls to `/api/...` will automatically go to the FastAPI backend.
+
+## Open Questions
+
+None at this time.
+
+## Proposed Changes
+
+### Backend Route Modifications
+- Remove the old UI (`app/index.html` and backups).
+- Remove the redirect endpoints (`@app.get("/")` and `/dashboard`) in `app/main.py`.
+- Add a new fallback route at the bottom of `app/main.py` that mounts the compiled Next.js `out/` folder using FastAPI's `StaticFiles(html=True)`.
+
+#### [MODIFY] [main.py](file:///\\wsl$\Ubuntu\home\nehal07\secure_med_enclosure\app\main.py)
+#### [DELETE] [index.html](file:///\\wsl$\Ubuntu\home\nehal07\secure_med_enclosure\app\index.html)
+
+---
+
+### Frontend Build Configuration
+- Modify `frontend/next.config.mjs` to enable static exports.
+
+#### [MODIFY] [next.config.mjs](file:///\\wsl$\Ubuntu\home\nehal07\secure_med_enclosure\frontend\next.config.mjs)
+
+---
+
+## Verification Plan
+
+### Automated Build Steps
+- Run `pnpm install` and `pnpm run build` in the `frontend` folder to generate the `out/` folder.
+
+### Manual Verification
+- Start the backend and verify that visiting `http://localhost:8000/` displays the new Next.js UI directly, and that API calls to the backend succeed.
+- Verify the layout responsiveness (mobile vs laptop) directly through the browser.
